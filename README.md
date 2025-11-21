@@ -54,6 +54,7 @@ The binary will be available at `./target/release/selfish-gene`
 -C, --capacity <N>                    Maximum population capacity [default: 10000]
 -a, --appearance-rate <RATE>          New replicators per timestep (Poisson λ) [default: 100]
 -t, --max-timesteps <N>               Maximum timesteps (0 = unlimited) [default: 1000]
+--senescence-rate <RATE>              Senescence rate (age-dependent mortality factor, default 0 = disabled)
 
 # Initial trait distributions (mean and std dev)
 --init-survival-mean <MEAN>           [default: 0.7]
@@ -98,6 +99,7 @@ Each timestep:
 
 1. **Appearance**: New replicators appear (Poisson distribution)
 2. **Survival**: Each replicator survives with probability = survival_rate
+   - *Age (senescence):* The survival probability is reduced with age following an exponential decay: `effective_survival = survival_rate * exp(-senescence_rate * age)`.
 3. **Replication**: Survivors produce offspring
    - Actual rate = replication_rate × resource_factor
    - Resource factor = `1 - (N / C)` (density-dependent)
@@ -109,6 +111,8 @@ The resource factor creates selection pressure:
 - When population is low (N << C), replication is near maximum
 - When approaching capacity (N → C), replication slows down
 - Traits that balance survival and efficient replication tend to dominate
+
+Senescence introduces an additional evolutionary pressure: higher senescence rates penalize older individuals, favoring traits that reproduce earlier or that maintain higher baseline survival at younger ages.
 
 ## Example output
 
@@ -139,6 +143,7 @@ Final population size:    10000
 Average survival rate:    1.000000
 Average replication rate: 1.119440
 Average mutation rate:    0.007221
+Average age:              12.0334
 ════════════════════════════════════════════════════════════════
 ```
 

@@ -73,6 +73,10 @@ pub struct Config {
     /// Random seed for reproducibility
     #[arg(long)]
     pub seed: Option<u64>,
+
+    /// Senescence rate (age-dependent mortality factor)
+    #[arg(long, default_value = "0.0")]
+    pub senescence_rate: f64,
 }
 
 impl Default for Config {
@@ -95,6 +99,7 @@ impl Default for Config {
             top_profiles: 15,
             output_file: None,
             seed: None,
+            senescence_rate: 0.0,
         }
     }
 }

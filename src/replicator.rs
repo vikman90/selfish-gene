@@ -13,6 +13,8 @@ pub struct Replicator {
 
     /// Probability of mutation occurring during replication
     pub mutation_rate: f64,
+    /// Age in timesteps (starts at 0 for new individuals)
+    pub age: usize,
 }
 
 impl Replicator {
@@ -22,6 +24,7 @@ impl Replicator {
             survival_rate: survival_rate.max(0.0).min(1.0),
             replication_rate: replication_rate.max(0.0),
             mutation_rate: mutation_rate.max(0.0).min(1.0),
+            age: 0,
         }
     }
 
@@ -82,7 +85,10 @@ impl Replicator {
                 self.mutation_rate + noise_dist.sample(rng),
             )
         } else {
-            self.clone()
+            // Non-mutated offspring is a clone of parent traits but age resets to 0
+            let mut child = self.clone();
+            child.age = 0;
+            child
         }
     }
 }

@@ -159,11 +159,13 @@ impl LiveVisualizer {
         let survival_mean = population.iter().map(|r| r.survival_rate).sum::<f64>() / n;
         let replication_mean = population.iter().map(|r| r.replication_rate).sum::<f64>() / n;
         let mutation_mean = population.iter().map(|r| r.mutation_rate).sum::<f64>() / n;
+        let age_mean = population.iter().map(|r| r.age as f64).sum::<f64>() / n;
 
         println!("Final population size:    {}", population.len());
         println!("Average survival rate:    {:.6}", survival_mean);
         println!("Average replication rate: {:.6}", replication_mean);
         println!("Average mutation rate:    {:.6}", mutation_mean);
+        println!("Average age:              {:.4}", age_mean);
         println!("════════════════════════════════════════════════════════════════");
     }
 

@@ -13,6 +13,8 @@ pub struct PopulationStats {
     pub replication_std: f64,
     pub mutation_mean: f64,
     pub mutation_std: f64,
+    pub age_mean: f64,
+    pub age_std: f64,
 }
 
 impl PopulationStats {
@@ -46,6 +48,13 @@ impl PopulationStats {
             .sum::<f64>()
             / n;
 
+        let age_mean = population.iter().map(|r| r.age as f64).sum::<f64>() / n;
+        let age_variance = population
+            .iter()
+            .map(|r| (r.age as f64 - age_mean).powi(2))
+            .sum::<f64>()
+            / n;
+
         Self {
             timestep,
             population_size: population.len(),
@@ -55,6 +64,8 @@ impl PopulationStats {
             replication_std: replication_variance.sqrt(),
             mutation_mean,
             mutation_std: mutation_variance.sqrt(),
+            age_mean,
+            age_std: age_variance.sqrt(),
         }
     }
 
@@ -68,6 +79,8 @@ impl PopulationStats {
             replication_std: 0.0,
             mutation_mean: 0.0,
             mutation_std: 0.0,
+            age_mean: 0.0,
+            age_std: 0.0,
         }
     }
 
@@ -93,6 +106,7 @@ impl PopulationStats {
             "  mutation:    μ={:.4} σ={:.4}",
             self.mutation_mean, self.mutation_std
         );
+        println!("  age:         μ={:.4} σ={:.4}", self.age_mean, self.age_std);
     }
 }
 

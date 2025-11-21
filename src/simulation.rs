@@ -95,8 +95,9 @@ impl Simulation {
             }
         }
 
-        // Step 2: Survival - filter out those who don't survive
-        // We need to use a single RNG, so we'll generate random numbers first
+        // Step 2: Survival - filter out those who don't survive (age-dependent)
+        // We generate random numbers once to preserve RNG sequence behavior
+        let sen = self.config.senescence_rate;
         let survival_rolls: Vec<f64> = (0..self.population.len())
             .map(|_| self.rng.gen::<f64>())
             .collect();
@@ -105,7 +106,13 @@ impl Simulation {
             .population
             .iter()
             .zip(survival_rolls.iter())
-            .filter(|(rep, roll)| **roll < rep.survival_rate)
+            .filter(|(rep, roll)| {
+                let age_f = rep.age as f64;
+                // Exponential decay with age: exp(-sen * age)
+                let decay = (-sen * age_f).exp();
+                let effective = (rep.survival_rate * decay).max(0.0).min(1.0);
+                **roll < effective
+            })
             .map(|(rep, _)| rep.clone())
             .collect();
 
@@ -148,6 +155,11 @@ impl Simulation {
         }
 
         self.population.extend(offspring);
+
+        // Step 4: Age increment - all individuals age by 1 each timestep
+        for rep in &mut self.population {
+            rep.age = rep.age.saturating_add(1);
+        }
     }
 
     /// Run the full simulation

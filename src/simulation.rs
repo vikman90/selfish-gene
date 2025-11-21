@@ -212,14 +212,6 @@ impl Simulation {
                 break;
             }
 
-            // Check termination conditions
-            if self.population.is_empty() {
-                if !self.config.live_display() {
-                    println!("Population extinct at timestep {}", self.timestep);
-                }
-                break;
-            }
-
             if self.config.max_timesteps > 0 && self.timestep >= self.config.max_timesteps {
                 if !self.config.live_display() {
                     println!("Reached maximum timesteps: {}", self.config.max_timesteps);

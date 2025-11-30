@@ -1,5 +1,7 @@
 # Selfish Gene Simulator 🧬
 
+![CI](https://github.com/vikman90/selfish-gene/actions/workflows/ci.yml/badge.svg)
+
 A high-performance evolution simulator based on Richard Dawkins' **Selfish Gene** theory, implemented in Rust with real-time ASCII visualization.
 
 ## Features

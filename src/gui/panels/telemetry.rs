@@ -60,6 +60,13 @@ pub fn render_telemetry_panel(
                 ));
                 ui.end_row();
 
+                ui.label("Mean aggression μ(A):");
+                ui.label(format!(
+                    "{:.4} (σ = {:.4})",
+                    stats.aggression_mean, stats.aggression_std
+                ));
+                ui.end_row();
+
                 ui.label("Mean age μ(Age):");
                 ui.label(format!("{:.2} (σ = {:.2})", stats.age_mean, stats.age_std));
                 ui.end_row();
@@ -97,6 +104,12 @@ pub fn render_telemetry_panel(
                         "Mutation",
                         winner.mutation_rate,
                         Color32::from_rgb(255, 160, 60),
+                    );
+                    render_trait_badge(
+                        ui,
+                        "Aggression",
+                        winner.aggression,
+                        Color32::from_rgb(255, 110, 110),
                     );
                     ui.label(format!("Age: {}", winner.age));
                 });

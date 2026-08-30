@@ -9,6 +9,7 @@ struct ProfileBin {
     survival_bin: u8,    // 0-10 (0.0-1.0 in steps of 0.1)
     replication_bin: u8, // 0-20 (0.0-2.0 in steps of 0.1)
     mutation_bin: u8,    // 0-5 (0.0-0.05 in steps of 0.01)
+    aggression_bin: u8,  // 0-10 (0.0-1.0 in steps of 0.1)
 }
 
 impl ProfileBin {
@@ -17,15 +18,17 @@ impl ProfileBin {
             survival_bin: ((rep.survival_rate * 10.0).round() as u8).min(10),
             replication_bin: ((rep.replication_rate * 10.0).round() as u8).min(20),
             mutation_bin: ((rep.mutation_rate * 100.0).round() as u8).min(5),
+            aggression_bin: ((rep.aggression * 10.0).round() as u8).min(10),
         }
     }
 
     fn display_label(&self) -> String {
         format!(
-            "S: {:.1}  |  R: {:.1}  |  M: {:.2}",
+            "S: {:.1}  |  R: {:.1}  |  M: {:.2}  |  A: {:.1}",
             self.survival_bin as f64 / 10.0,
             self.replication_bin as f64 / 10.0,
-            self.mutation_bin as f64 / 100.0
+            self.mutation_bin as f64 / 100.0,
+            self.aggression_bin as f64 / 10.0,
         )
     }
 }
@@ -34,7 +37,7 @@ impl ProfileBin {
 pub fn render_profiles_panel(ui: &mut Ui, population: &[Replicator], top_n: usize) {
     ui.heading("📊 Genetic Profile Distribution (Phenotypes)");
     ui.label(
-        "Active replicator clusters grouped by Survival (S), Replication (R), and Mutation (M) traits.",
+        "Active replicator clusters grouped by Survival (S), Replication (R), Mutation (M), and Aggression (A) traits.",
     );
     ui.separator();
 

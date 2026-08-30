@@ -69,6 +69,41 @@ pub fn render_params_panel(
                     ui.label("Std Dev:");
                     ui.add(Slider::new(&mut config.init_mutation_std, 0.0..=0.05).step_by(0.001));
                 });
+
+                ui.separator();
+                ui.strong("Aggression / Hawk (A):");
+                ui.horizontal(|ui| {
+                    ui.label("Mean:");
+                    ui.add(Slider::new(&mut config.init_aggression_mean, 0.0..=1.0).step_by(0.01));
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Std Dev:");
+                    ui.add(Slider::new(&mut config.init_aggression_std, 0.0..=0.5).step_by(0.01));
+                });
+            });
+
+        ui.add_space(8.0);
+
+        CollapsingHeader::new("⚔️ Evolutionary Game & ESS (Hawk-Dove)")
+            .default_open(true)
+            .show(ui, |ui| {
+                ui.checkbox(&mut config.enable_game_theory, "Enable Hawk-Dove Game");
+                if config.enable_game_theory {
+                    ui.label("Resource Value (V):");
+                    ui.add(Slider::new(&mut config.game_resource_value, 0.1..=20.0).step_by(0.1))
+                        .on_hover_text("Payoff gained when acquiring contested resources.");
+
+                    ui.label("Injury Cost (C):");
+                    ui.add(Slider::new(&mut config.game_injury_cost, 0.1..=50.0).step_by(0.5))
+                        .on_hover_text("Cost incurred from fighting injuries in Hawk vs Hawk encounters.");
+
+                    ui.label("Interaction Rate (ρ):");
+                    ui.add(Slider::new(&mut config.game_interaction_rate, 0.1..=10.0).step_by(0.1))
+                        .on_hover_text("Mean number of encounters per individual per generation.");
+
+                    let ess_p = (config.game_resource_value / config.game_injury_cost).min(1.0);
+                    ui.label(format!("Theoretical ESS (V/C): {:.3}", ess_p));
+                }
             });
 
         ui.add_space(8.0);

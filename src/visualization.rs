@@ -13,6 +13,7 @@ struct ProfileBin {
     survival_bin: u8,    // 0-10 (0.0-1.0 in steps of 0.1)
     replication_bin: u8, // 0-20 (0.0-2.0 in steps of 0.1)
     mutation_bin: u8,    // 0-5 (0.0-0.05 in steps of 0.01)
+    aggression_bin: u8,  // 0-10 (0.0-1.0 in steps of 0.1)
 }
 
 impl ProfileBin {
@@ -21,15 +22,17 @@ impl ProfileBin {
             survival_bin: ((rep.survival_rate * 10.0).round() as u8).min(10),
             replication_bin: ((rep.replication_rate * 10.0).round() as u8).min(20),
             mutation_bin: ((rep.mutation_rate * 100.0).round() as u8).min(5),
+            aggression_bin: ((rep.aggression * 10.0).round() as u8).min(10),
         }
     }
 
     fn display_label(&self) -> String {
         format!(
-            "S:{:.1} R:{:.1} M:{:.2}",
+            "S:{:.1} R:{:.1} M:{:.2} A:{:.1}",
             self.survival_bin as f64 / 10.0,
             self.replication_bin as f64 / 10.0,
-            self.mutation_bin as f64 / 100.0
+            self.mutation_bin as f64 / 100.0,
+            self.aggression_bin as f64 / 10.0,
         )
     }
 }
@@ -49,9 +52,9 @@ impl LiveVisualizer {
         }
 
         // Total width: 78 chars (matching the border)
-        // Layout: "║ " (2) + label (18) + " │ " (3) + bar (47) + " " (1) + count (5) + " ║" (2) = 78
+        // Layout: "║ " (2) + label (24) + " │ " (3) + bar (41) + " " (1) + count (5) + " ║" (2) = 78
         Self {
-            max_bar_width: 47,
+            max_bar_width: 41,
             top_n,
             enabled,
         }
@@ -111,7 +114,7 @@ impl LiveVisualizer {
             };
 
             // Profile label (left-aligned, fixed width)
-            output.push_str(&format!("║ {:18} │ ", bin.display_label()));
+            output.push_str(&format!("║ {:24} │ ", bin.display_label()));
 
             // Bar with padding to fill the space
             let bar = "█".repeat(bar_length);
@@ -122,9 +125,9 @@ impl LiveVisualizer {
 
         // Fill remaining lines with empty rows if we have fewer than top_n profiles
         for _ in sorted.len()..self.top_n {
-            // Empty line matching the format: label (20 chars) + bar area (60 chars) + count (6 chars)
+            // Empty line matching the format: label (24 chars) + bar area (41 chars) + count (5 chars)
             output.push_str(&format!(
-                "║ {:18} │ {} {:>5} ║\r\n",
+                "║ {:24} │ {} {:>5} ║\r\n",
                 "",
                 " ".repeat(self.max_bar_width),
                 ""
@@ -136,7 +139,7 @@ impl LiveVisualizer {
             "╚════════════════════════════════════════════════════════════════════════════╝\r\n",
         );
         output.push_str("\r\n");
-        output.push_str("Legend: S=Survival rate, R=Replication rate, M=Mutation rate\r\n");
+        output.push_str("Legend: S=Survival, R=Replication, M=Mutation, A=Aggression (Hawk)\r\n");
 
         // Clear screen, move to top, and print all at once
         let _ = queue!(stdout, MoveTo(0, 0));
@@ -172,12 +175,14 @@ impl LiveVisualizer {
         let survival_mean = population.iter().map(|r| r.survival_rate).sum::<f64>() / n;
         let replication_mean = population.iter().map(|r| r.replication_rate).sum::<f64>() / n;
         let mutation_mean = population.iter().map(|r| r.mutation_rate).sum::<f64>() / n;
+        let aggression_mean = population.iter().map(|r| r.aggression).sum::<f64>() / n;
         let age_mean = population.iter().map(|r| r.age as f64).sum::<f64>() / n;
 
         println!("Final population size:    {}", population.len());
         println!("Average survival rate:    {:.6}", survival_mean);
         println!("Average replication rate: {:.6}", replication_mean);
         println!("Average mutation rate:    {:.6}", mutation_mean);
+        println!("Average aggression:       {:.6}", aggression_mean);
         println!("Average age:              {:.4}", age_mean);
         println!("════════════════════════════════════════════════════════════════");
     }

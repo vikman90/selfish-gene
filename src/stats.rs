@@ -192,3 +192,69 @@ impl Default for SimulationHistory {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_population_stats_empty() {
+        let stats = PopulationStats::from_population(0, &[]);
+        assert_eq!(stats.population_size, 0);
+        assert_eq!(stats.survival_mean, 0.0);
+        assert_eq!(stats.replication_mean, 0.0);
+        assert_eq!(stats.mutation_mean, 0.0);
+        assert_eq!(stats.age_mean, 0.0);
+    }
+
+    #[test]
+    fn test_population_stats_calculation() {
+        let reps = vec![
+            Replicator::new(0.6, 1.0, 0.01),
+            Replicator::new(0.8, 2.0, 0.03),
+        ];
+        let stats = PopulationStats::from_population(1, &reps);
+        assert_eq!(stats.population_size, 2);
+        assert!((stats.survival_mean - 0.7).abs() < 1e-6);
+        assert!((stats.replication_mean - 1.5).abs() < 1e-6);
+        assert!((stats.mutation_mean - 0.02).abs() < 1e-6);
+        assert!(stats.max_variance() > 0.0);
+    }
+
+    #[test]
+    fn test_convergence_detector() {
+        let mut detector = ConvergenceDetector::new(3, 0.05);
+        assert!(!detector.has_converged());
+
+        // Create population with low variance
+        let rep1 = Replicator::new(0.8, 1.5, 0.01);
+        let rep2 = Replicator::new(0.801, 1.501, 0.0101);
+        let low_var_stats = PopulationStats::from_population(1, &[rep1, rep2]);
+
+        detector.add(low_var_stats.clone());
+        assert!(!detector.has_converged()); // only 1 in window of 3
+
+        detector.add(low_var_stats.clone());
+        assert!(!detector.has_converged()); // only 2 in window of 3
+
+        detector.add(low_var_stats);
+        assert!(detector.has_converged()); // window full and all below threshold
+    }
+
+    #[test]
+    fn test_simulation_history_serialization() {
+        let mut history = SimulationHistory::new();
+        let rep = Replicator::new(0.8, 1.5, 0.01);
+        history.add(PopulationStats::from_population(0, &[rep]));
+        history.finalize(true, 10);
+
+        let json = serde_json::to_string(&history).expect("Serialize failed");
+        let deserialized: SimulationHistory =
+            serde_json::from_str(&json).expect("Deserialize failed");
+
+        assert_eq!(deserialized.stats.len(), 1);
+        assert!(deserialized.converged);
+        assert_eq!(deserialized.final_timestep, 10);
+    }
+}
+

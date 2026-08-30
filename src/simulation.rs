@@ -49,6 +49,9 @@ impl Simulation {
     pub fn with_config(config: Config) -> Self {
         let mut sim = Self::new(config, Arc::new(AtomicBool::new(false)));
         sim.initialize_population();
+        let stats = sim.current_stats();
+        sim.convergence_detector.add(stats.clone());
+        sim.history.add(stats);
         sim
     }
 
@@ -69,10 +72,18 @@ impl Simulation {
         self.history = SimulationHistory::new();
         self.interrupted.store(false, Ordering::SeqCst);
         self.initialize_population();
+        let stats = self.current_stats();
+        self.convergence_detector.add(stats.clone());
+        self.history.add(stats);
     }
 
     /// Initialize the population with new replicators from appearance rate
     pub fn initialize_population(&mut self) {
+        if self.config.appearance_rate <= 0.0 {
+            self.population.clear();
+            return;
+        }
+
         let poisson = Poisson::new(self.config.appearance_rate).unwrap();
         let initial_count = poisson.sample(&mut self.rng) as usize;
 
@@ -100,8 +111,12 @@ impl Simulation {
 
     /// Run one timestep of the simulation
     pub fn step(&mut self) {
+        if self.is_finished() {
+            return;
+        }
+
         // Step 1: New appearances (only if population is not at capacity)
-        if self.population.len() < self.config.capacity {
+        if self.population.len() < self.config.capacity && self.config.appearance_rate > 0.0 {
             let poisson = Poisson::new(self.config.appearance_rate).unwrap();
             let new_count = poisson.sample(&mut self.rng) as usize;
 
@@ -142,49 +157,56 @@ impl Simulation {
             .map(|(rep, _)| rep.clone())
             .collect();
 
-        if self.population.is_empty() {
-            return;
-        }
+        if !self.population.is_empty() {
+            // Step 3: Replication
+            let resource_factor = self.resource_factor();
+            let mut offspring = Vec::new();
 
-        // Step 3: Replication
-        let resource_factor = self.resource_factor();
-        let mut offspring = Vec::new();
+            for replicator in &self.population {
+                let offspring_count = {
+                    let effective_rate = replicator.replication_rate * resource_factor;
+                    let base = effective_rate.floor() as usize;
+                    let fractional = effective_rate - effective_rate.floor();
+                    if self.rng.gen::<f64>() < fractional {
+                        base + 1
+                    } else {
+                        base
+                    }
+                };
 
-        for replicator in &self.population {
-            let offspring_count = {
-                let effective_rate = replicator.replication_rate * resource_factor;
-                let base = effective_rate.floor() as usize;
-                let fractional = effective_rate - effective_rate.floor();
-                if self.rng.gen::<f64>() < fractional {
-                    base + 1
-                } else {
-                    base
+                for _ in 0..offspring_count {
+                    if self.population.len() + offspring.len() >= self.config.capacity {
+                        break;
+                    }
+
+                    let child = if self.rng.gen::<f64>() < replicator.mutation_rate {
+                        replicator.create_offspring(&mut self.rng, self.config.mutation_sigma)
+                    } else {
+                        replicator.clone()
+                    };
+                    offspring.push(child);
                 }
-            };
 
-            for _ in 0..offspring_count {
                 if self.population.len() + offspring.len() >= self.config.capacity {
                     break;
                 }
-
-                let child = if self.rng.gen::<f64>() < replicator.mutation_rate {
-                    replicator.create_offspring(&mut self.rng, self.config.mutation_sigma)
-                } else {
-                    replicator.clone()
-                };
-                offspring.push(child);
             }
 
-            if self.population.len() + offspring.len() >= self.config.capacity {
-                break;
+            self.population.extend(offspring);
+
+            // Step 4: Age increment - all individuals age by 1 each timestep
+            for rep in &mut self.population {
+                rep.age = rep.age.saturating_add(1);
             }
         }
 
-        self.population.extend(offspring);
+        self.timestep += 1;
+        let stats = self.current_stats();
+        self.convergence_detector.add(stats.clone());
+        self.history.add(stats);
 
-        // Step 4: Age increment - all individuals age by 1 each timestep
-        for rep in &mut self.population {
-            rep.age = rep.age.saturating_add(1);
+        if self.convergence_detector.has_converged() {
+            self.history.finalize(true, self.timestep);
         }
     }
 
@@ -204,21 +226,23 @@ impl Simulation {
             println!();
         }
 
-        // Initialize
-        self.initialize_population();
+        // Initialize if empty
+        if self.timestep == 0 && self.history.stats.is_empty() {
+            self.initialize_population();
+            let stats = self.current_stats();
+            self.convergence_detector.add(stats.clone());
+            self.history.add(stats);
+        }
 
         // Main simulation loop
-        loop {
-            // Calculate and record statistics
-            let stats = PopulationStats::from_population(self.timestep, &self.population);
-
+        while !self.is_finished() {
             // Display
             if self.timestep % self.config.display_interval == 0 {
                 if self.config.live_display() {
                     visualizer.display(self.timestep, &self.population, self.config.capacity);
                     // Small delay to make visualization visible
                     thread::sleep(Duration::from_millis(50));
-                } else {
+                } else if let Some(stats) = self.history.stats.last() {
                     stats.display();
                     println!();
                 }
@@ -238,36 +262,18 @@ impl Simulation {
                 }
             }
 
-            // Record statistics
-            self.convergence_detector.add(stats.clone());
-            self.history.add(stats);
-
-            // Check for interruption (Ctrl+C)
-            if self.interrupted.load(Ordering::SeqCst) {
-                if !self.config.live_display() {
-                    println!("\nInterrupted by user at timestep {}", self.timestep);
-                }
-                break;
-            }
-
-            if self.config.max_timesteps > 0 && self.timestep >= self.config.max_timesteps {
-                if !self.config.live_display() {
-                    println!("Reached maximum timesteps: {}", self.config.max_timesteps);
-                }
-                break;
-            }
-
-            if self.convergence_detector.has_converged() {
-                if !self.config.live_display() {
-                    println!("Convergence detected at timestep {}", self.timestep);
-                }
-                self.history.finalize(true, self.timestep);
-                break;
-            }
-
-            // Next timestep
-            self.timestep += 1;
             self.step();
+        }
+
+        // Final status message
+        if !self.config.live_display() {
+            if self.is_interrupted() {
+                println!("\nInterrupted by user at timestep {}", self.timestep);
+            } else if self.has_converged() {
+                println!("Convergence detected at timestep {}", self.timestep);
+            } else if self.config.max_timesteps > 0 && self.timestep >= self.config.max_timesteps {
+                println!("Reached maximum timesteps: {}", self.config.max_timesteps);
+            }
         }
 
         // Final statistics
@@ -278,23 +284,8 @@ impl Simulation {
             if let Some(final_stats) = self.convergence_detector.latest() {
                 final_stats.display();
 
-                if !self.population.is_empty() {
+                if let Some(winner) = self.winner_profile() {
                     println!("\n=== Winner Profile ===");
-                    // Find the "winner" as the one closest to the mean
-                    let winner = self
-                        .population
-                        .iter()
-                        .min_by(|a, b| {
-                            let a_dist = (a.survival_rate - final_stats.survival_mean).abs()
-                                + (a.replication_rate - final_stats.replication_mean).abs()
-                                + (a.mutation_rate - final_stats.mutation_mean).abs();
-                            let b_dist = (b.survival_rate - final_stats.survival_mean).abs()
-                                + (b.replication_rate - final_stats.replication_mean).abs()
-                                + (b.mutation_rate - final_stats.mutation_mean).abs();
-                            a_dist.partial_cmp(&b_dist).unwrap()
-                        })
-                        .unwrap();
-
                     println!("  survival_rate:    {:.6}", winner.survival_rate);
                     println!("  replication_rate: {:.6}", winner.replication_rate);
                     println!("  mutation_rate:    {:.6}", winner.mutation_rate);
@@ -389,3 +380,145 @@ impl Simulation {
         self.interrupted.load(Ordering::SeqCst)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simulation_initialization() {
+        let mut config = Config::default();
+        config.appearance_rate = 50.0;
+        config.seed = Some(12345);
+
+        let sim = Simulation::with_config(config);
+        assert!(!sim.population().is_empty());
+        assert_eq!(sim.timestep(), 0);
+        assert!(!sim.is_finished());
+    }
+
+    #[test]
+    fn test_resource_factor() {
+        let mut config = Config::default();
+        config.capacity = 100;
+        let mut sim = Simulation::with_config(config);
+
+        // Clear population and test factor
+        sim.population.clear();
+        assert_eq!(sim.resource_factor(), 1.0);
+
+        // Fill population to capacity
+        for _ in 0..100 {
+            sim.population.push(Replicator::new(0.8, 1.2, 0.01));
+        }
+        assert_eq!(sim.resource_factor(), 0.0);
+    }
+
+    #[test]
+    fn test_simulation_stepping_and_aging() {
+        let mut config = Config::default();
+        config.capacity = 200;
+        config.appearance_rate = 20.0;
+        config.seed = Some(42);
+
+        let mut sim = Simulation::with_config(config);
+        let initial_pop = sim.population().len();
+        assert!(initial_pop > 0);
+
+        sim.step();
+        assert_eq!(sim.timestep(), 1);
+
+        // Surviving individuals from previous generation should have aged
+        let has_aged = sim.population().iter().any(|r| r.age >= 1);
+        assert!(has_aged);
+    }
+
+    #[test]
+    fn test_simulation_determinism() {
+        let mut config1 = Config::default();
+        config1.seed = Some(987654);
+        config1.max_timesteps = 15;
+        config1.capacity = 500;
+
+        let config2 = config1.clone();
+
+        let mut sim1 = Simulation::with_config(config1);
+        let mut sim2 = Simulation::with_config(config2);
+
+        assert_eq!(sim1.population().len(), sim2.population().len());
+
+        for _ in 0..15 {
+            sim1.step();
+            sim2.step();
+        }
+
+        assert_eq!(sim1.population().len(), sim2.population().len());
+        let stats1 = sim1.current_stats();
+        let stats2 = sim2.current_stats();
+
+        assert_eq!(stats1.survival_mean, stats2.survival_mean);
+        assert_eq!(stats1.replication_mean, stats2.replication_mean);
+        assert_eq!(stats1.mutation_mean, stats2.mutation_mean);
+    }
+
+    #[test]
+    fn test_senescence_reduces_survival() {
+        // Run with high senescence vs zero senescence
+        let mut config_no_sen = Config::default();
+        config_no_sen.seed = Some(42);
+        config_no_sen.senescence_rate = 0.0;
+        config_no_sen.appearance_rate = 0.0; // no new arrivals
+        config_no_sen.capacity = 100;
+
+        let mut config_high_sen = config_no_sen.clone();
+        config_high_sen.senescence_rate = 0.5; // very rapid aging death
+
+        let mut sim_no_sen = Simulation::with_config(config_no_sen);
+        let mut sim_high_sen = Simulation::with_config(config_high_sen);
+
+        // Seed with identical aged individuals
+        let base_reps: Vec<Replicator> = (0..50)
+            .map(|_| {
+                let mut r = Replicator::new(0.9, 0.0, 0.0); // no reproduction, high base survival
+                r.age = 10;
+                r
+            })
+            .collect();
+
+        sim_no_sen.population = base_reps.clone();
+        sim_high_sen.population = base_reps;
+
+        sim_no_sen.step();
+        sim_high_sen.step();
+
+        // High senescence should have fewer survivors among old individuals
+        assert!(sim_high_sen.population().len() < sim_no_sen.population().len());
+    }
+
+    #[test]
+    fn test_simulation_reset() {
+        let mut config = Config::default();
+        config.seed = Some(111);
+        config.capacity = 50;
+
+        let mut sim = Simulation::with_config(config.clone());
+        for _ in 0..5 {
+            sim.step();
+        }
+
+        sim.reset(config);
+        assert_eq!(sim.timestep(), 0);
+        assert_eq!(sim.history().stats.len(), 1);
+        assert!(!sim.population().is_empty());
+    }
+
+    #[test]
+    fn test_winner_profile() {
+        let mut config = Config::default();
+        config.seed = Some(777);
+        let sim = Simulation::with_config(config);
+        let winner = sim.winner_profile();
+        assert!(winner.is_some());
+    }
+}
+

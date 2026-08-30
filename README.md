@@ -82,8 +82,17 @@ The binary will be available at `./target/release/selfish-gene`
 -o, --output-file <FILE>              Export results to JSON
 
 # Reproducibility
---seed <SEED>                         Random seed for reproducible runs
 ```
+
+## Documentation
+
+Comprehensive project documentation is available in the [`docs/`](docs/) directory:
+
+- 📖 **[Theoretical Foundations (`docs/theory.md`)](docs/theory.md)**: Richard Dawkins' selfish gene principles, population genetics, and mathematical formulations.
+- ⚙️ **[Parameter Reference (`docs/parameters.md`)](docs/parameters.md)**: Full CLI reference, mathematical formulas, parameter domains, and scenario presets.
+- 🏗️ **[System Architecture (`docs/architecture.md`)](docs/architecture.md)**: Codebase modules, execution lifecycle flow, and data pipelines.
+- 🚀 **[Extension Guide (`docs/extending.md`)](docs/extending.md)**: Protocols for adding new traits, environmental dynamics, and game theory interactions.
+- 🤖 **[AI Guidelines (`AGENTS.md`)](AGENTS.md)**: Project compass and consistency rules for AI programming assistants.
 
 ## How it works
 

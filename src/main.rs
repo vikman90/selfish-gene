@@ -1,12 +1,5 @@
-mod config;
-mod replicator;
-mod simulation;
-mod stats;
-mod visualization;
-
 use clap::Parser;
-use config::Config;
-use simulation::Simulation;
+use selfish_gene::{Config, Simulation};
 use signal_hook::consts::{SIGINT, SIGTERM};
 use signal_hook::flag;
 use std::sync::atomic::AtomicBool;

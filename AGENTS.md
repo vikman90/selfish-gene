@@ -14,12 +14,16 @@ The simulator models evolution from the gene's-eye view, where **replicators** w
 
 | Domain Concept | Theoretical Meaning | Source File | Key Structs / Functions |
 | :--- | :--- | :--- | :--- |
+| **Core Library** | Re-exports engine, models, and telemetry | [`src/lib.rs`](file:///home/vikman/Projects/selfish-gene/src/lib.rs) | `selfish_gene::*` |
 | **Replicator (Gene)** | Unit of selection with heritable traits | [`src/replicator.rs`](file:///home/vikman/Projects/selfish-gene/src/replicator.rs) | `Replicator`, `create_offspring()`, `from_distributions()` |
-| **Simulation Loop** | Generational cycle & selective pressures | [`src/simulation.rs`](file:///home/vikman/Projects/selfish-gene/src/simulation.rs) | `Simulation`, `step()`, `resource_factor()` |
-| **Configuration** | Simulation parameters & CLI parser | [`src/config.rs`](file:///home/vikman/Projects/selfish-gene/src/config.rs) | `Config` |
+| **Simulation Loop** | Generational cycle & selective pressures | [`src/simulation.rs`](file:///home/vikman/Projects/selfish-gene/src/simulation.rs) | `Simulation`, `step()`, `resource_factor()`, `reset()` |
+| **Configuration** | Simulation parameters & CLI/GUI config | [`src/config.rs`](file:///home/vikman/Projects/selfish-gene/src/config.rs) | `Config` |
 | **Statistics & History** | Population telemetry & convergence | [`src/stats.rs`](file:///home/vikman/Projects/selfish-gene/src/stats.rs) | `PopulationStats`, `ConvergenceDetector`, `SimulationHistory` |
-| **Live Visualization** | Real-time TUI bar chart & distributions | [`src/visualization.rs`](file:///home/vikman/Projects/selfish-gene/src/visualization.rs) | `LiveVisualizer`, `ProfileBin` |
-| **CLI Entrypoint** | Signal handling & initialization | [`src/main.rs`](file:///home/vikman/Projects/selfish-gene/src/main.rs) | `main()` |
+| **Live CLI TUI** | Real-time TUI bar chart & distributions | [`src/visualization.rs`](file:///home/vikman/Projects/selfish-gene/src/visualization.rs) | `LiveVisualizer`, `ProfileBin` |
+| **GUI Application** | Interactive dashboard (`egui` / `eframe`) | [`src/gui/app.rs`](file:///home/vikman/Projects/selfish-gene/src/gui/app.rs) | `SelfishGeneApp`, `RunnerState`, `render_params_panel` |
+| **GUI Panels** | Parameter sliders, plots, profiles | [`src/gui/panels/`](file:///home/vikman/Projects/selfish-gene/src/gui/panels/) | `time_series`, `profiles`, `telemetry`, `controls`, `params` |
+| **CLI Entrypoint** | Signal handling & CLI runner (`selfish-gene`) | [`src/main.rs`](file:///home/vikman/Projects/selfish-gene/src/main.rs) | `main()` |
+| **GUI Entrypoint** | Window init & launcher (`selfish-gene-gui`) | [`src/bin/gui.rs`](file:///home/vikman/Projects/selfish-gene/src/bin/gui.rs) | `main()` |
 
 ---
 

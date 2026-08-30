@@ -121,3 +121,25 @@ selfish-gene \
   --convergence-threshold 0.0005 \
   --convergence-window 100
 ```
+
+---
+
+## 4. Interactive GUI Dashboard Controls (`selfish-gene-gui`)
+
+When launching the graphic interface via `cargo run --bin selfish-gene-gui`, all parameters can be adjusted interactively in the sidebar:
+
+| Section | Parameter / Slider | GUI Range | Description |
+| :--- | :--- | :--- | :--- |
+| **Capacity & Environment** | Capacity ($C$) | `100` ..= `50,000` (log) | Carrying capacity ceiling. |
+| | Appearance rate ($\lambda$) | `0.0` ..= `1000.0` | Poisson mean for spontaneous replicator influx. |
+| | Senescence ($\delta$) | `0.0` ..= `0.2` | Age-dependent mortality exponent ($e^{-\delta \cdot \text{age}}$). |
+| **Initial Traits** | Survival $\mu_S, \sigma_S$ | $\mu \in [0, 1], \sigma \in [0, 0.5]$ | Initial survival normal distribution. |
+| | Replication $\mu_R, \sigma_R$ | $\mu \in [0, 5], \sigma \in [0, 1.0]$ | Initial replication rate normal distribution. |
+| | Mutation $\mu_M, \sigma_M$ | $\mu \in [0, 0.2], \sigma \in [0, 0.05]$ | Initial mutation probability normal distribution. |
+| **Evolutionary Dynamics** | Mutation sigma ($\sigma$) | `0.001` ..= `0.1` | Gaussian noise added on mutation. |
+| | Max timesteps ($t_{\max}$) | `0` ..= `10,000` | Generation limit (0 = infinite). |
+| | PRNG Seed | Checkbox + numeric | Deterministic PRNG seed for exact reproducibility. |
+| **Convergence** | Variance threshold ($\epsilon$) | `0.0001` ..= `0.01` (log) | Variance threshold for genetic equilibrium (ESS). |
+| | Stability window ($W$) | `5` ..= `200` | Number of stable generations required. |
+| | Top Profiles | `5` ..= `30` | Number of top phenotype bins rendered in bar charts. |
+

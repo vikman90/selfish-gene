@@ -21,9 +21,9 @@ impl Replicator {
     /// Create a new replicator with specified traits
     pub fn new(survival_rate: f64, replication_rate: f64, mutation_rate: f64) -> Self {
         Self {
-            survival_rate: survival_rate.max(0.0).min(1.0),
+            survival_rate: survival_rate.clamp(0.0, 1.0),
             replication_rate: replication_rate.max(0.0),
-            mutation_rate: mutation_rate.max(0.0).min(1.0),
+            mutation_rate: mutation_rate.clamp(0.0, 1.0),
             age: 0,
         }
     }
@@ -96,8 +96,8 @@ impl Replicator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
     use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     #[test]
     fn test_replicator_creation() {
@@ -131,6 +131,6 @@ mod tests {
         let rep = Replicator::new(0.8, 2.5, 0.0);
 
         let offspring_count = rep.replicate(&mut rng, 1.0);
-        assert!(offspring_count >= 2 && offspring_count <= 3);
+        assert!((2..=3).contains(&offspring_count));
     }
 }

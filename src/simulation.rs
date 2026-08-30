@@ -45,8 +45,34 @@ impl Simulation {
         }
     }
 
+    /// Create a new standalone simulation with default interrupt handler (useful for GUI/tests)
+    pub fn with_config(config: Config) -> Self {
+        let mut sim = Self::new(config, Arc::new(AtomicBool::new(false)));
+        sim.initialize_population();
+        sim
+    }
+
+    /// Reset the simulation with a new or updated configuration
+    pub fn reset(&mut self, config: Config) {
+        let rng = if let Some(seed) = config.seed {
+            StdRng::seed_from_u64(seed)
+        } else {
+            StdRng::from_entropy()
+        };
+
+        self.convergence_detector =
+            ConvergenceDetector::new(config.convergence_window, config.convergence_threshold);
+        self.config = config;
+        self.population.clear();
+        self.rng = rng;
+        self.timestep = 0;
+        self.history = SimulationHistory::new();
+        self.interrupted.store(false, Ordering::SeqCst);
+        self.initialize_population();
+    }
+
     /// Initialize the population with new replicators from appearance rate
-    fn initialize_population(&mut self) {
+    pub fn initialize_population(&mut self) {
         let poisson = Poisson::new(self.config.appearance_rate).unwrap();
         let initial_count = poisson.sample(&mut self.rng) as usize;
 
@@ -66,14 +92,14 @@ impl Simulation {
     }
 
     /// Calculate the resource factor based on current population
-    fn resource_factor(&self) -> f64 {
+    pub fn resource_factor(&self) -> f64 {
         let n = self.population.len();
         let c = self.config.capacity;
         (1.0 - (n as f64 / c as f64)).max(0.0)
     }
 
     /// Run one timestep of the simulation
-    fn step(&mut self) {
+    pub fn step(&mut self) {
         // Step 1: New appearances (only if population is not at capacity)
         if self.population.len() < self.config.capacity {
             let poisson = Poisson::new(self.config.appearance_rate).unwrap();
@@ -283,5 +309,83 @@ impl Simulation {
                 Err(e) => eprintln!("\nError exporting results: {}", e),
             }
         }
+    }
+
+    /// Get a reference to the active population
+    pub fn population(&self) -> &[Replicator] {
+        &self.population
+    }
+
+    /// Get current configuration
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    /// Get current timestep
+    pub fn timestep(&self) -> usize {
+        self.timestep
+    }
+
+    /// Calculate and return statistics for the current population state
+    pub fn current_stats(&self) -> PopulationStats {
+        PopulationStats::from_population(self.timestep, &self.population)
+    }
+
+    /// Get simulation history
+    pub fn history(&self) -> &SimulationHistory {
+        &self.history
+    }
+
+    /// Get convergence detector
+    pub fn convergence_detector(&self) -> &ConvergenceDetector {
+        &self.convergence_detector
+    }
+
+    /// Check if convergence criteria have been met
+    pub fn has_converged(&self) -> bool {
+        self.convergence_detector.has_converged()
+    }
+
+    /// Check if simulation has reached termination conditions (max steps, convergence, or interruption)
+    pub fn is_finished(&self) -> bool {
+        (self.config.max_timesteps > 0 && self.timestep >= self.config.max_timesteps)
+            || self.has_converged()
+            || self.interrupted.load(Ordering::SeqCst)
+    }
+
+    /// Get winner replicator profile (closest to mean traits) if population is non-empty
+    pub fn winner_profile(&self) -> Option<Replicator> {
+        let stats = self
+            .convergence_detector
+            .latest()
+            .cloned()
+            .unwrap_or_else(|| self.current_stats());
+
+        if self.population.is_empty() {
+            return None;
+        }
+
+        self.population
+            .iter()
+            .min_by(|a, b| {
+                let a_dist = (a.survival_rate - stats.survival_mean).abs()
+                    + (a.replication_rate - stats.replication_mean).abs()
+                    + (a.mutation_rate - stats.mutation_mean).abs();
+                let b_dist = (b.survival_rate - stats.survival_mean).abs()
+                    + (b.replication_rate - stats.replication_mean).abs()
+                    + (b.mutation_rate - stats.mutation_mean).abs();
+                a_dist.partial_cmp(&b_dist).unwrap()
+            })
+            .cloned()
+    }
+
+    /// Request interruption of the simulation
+    pub fn interrupt(&self) {
+        self.interrupted.store(true, Ordering::SeqCst);
+    }
+
+    /// Check if simulation was interrupted
+    pub fn is_interrupted(&self) -> bool {
+        self.interrupted.load(Ordering::SeqCst)
     }
 }

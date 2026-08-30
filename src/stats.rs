@@ -93,7 +93,7 @@ impl PopulationStats {
 
     /// Pretty print for console output
     pub fn display(&self) {
-        println!("Timestep {}: N={}, C={}", self.timestep, self.population_size, "?");
+        println!("Timestep {}: N={}, C=?", self.timestep, self.population_size);
         println!(
             "  survival:    μ={:.4} σ={:.4}",
             self.survival_mean, self.survival_std

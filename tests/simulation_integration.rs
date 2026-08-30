@@ -2,14 +2,16 @@ use selfish_gene::{Config, Simulation};
 
 #[test]
 fn test_integration_full_simulation_convergence_or_limit() {
-    let mut config = Config::default();
-    config.seed = Some(42);
-    config.max_timesteps = 50;
-    config.capacity = 1000;
-    config.appearance_rate = 50.0;
-    config.convergence_threshold = 0.05;
-    config.convergence_window = 10;
-    config.no_live_display = true;
+    let config = Config {
+        seed: Some(42),
+        max_timesteps: 50,
+        capacity: 1000,
+        appearance_rate: 50.0,
+        convergence_threshold: 0.05,
+        convergence_window: 10,
+        no_live_display: true,
+        ..Default::default()
+    };
 
     let mut sim = Simulation::with_config(config);
     assert_eq!(sim.timestep(), 0);

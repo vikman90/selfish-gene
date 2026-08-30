@@ -53,7 +53,7 @@ pub fn render_profiles_panel(
     }
 
     let mut sorted_profiles: Vec<(ProfileBin, usize)> = histogram.into_iter().collect();
-    sorted_profiles.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted_profiles.sort_by_key(|a| std::cmp::Reverse(a.1));
 
     let total = population.len() as f64;
     let distinct_count = sorted_profiles.len();

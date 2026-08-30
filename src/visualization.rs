@@ -72,7 +72,7 @@ impl LiveVisualizer {
 
         // Sort by count (descending)
         let mut sorted: Vec<_> = histogram.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted.sort_by_key(|a| std::cmp::Reverse(a.1));
 
         let mut stdout = stdout();
 

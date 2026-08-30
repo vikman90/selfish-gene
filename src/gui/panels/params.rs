@@ -86,10 +86,8 @@ pub fn render_params_panel(
                     if ui.checkbox(use_seed, "Fijar semilla (Seed)").changed() {
                         config.seed = if *use_seed { Some(*seed_input) } else { None };
                     }
-                    if *use_seed {
-                        if ui.add(egui::DragValue::new(seed_input)).changed() {
-                            config.seed = Some(*seed_input);
-                        }
+                    if *use_seed && ui.add(egui::DragValue::new(seed_input)).changed() {
+                        config.seed = Some(*seed_input);
                     }
                 });
             });

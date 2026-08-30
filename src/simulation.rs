@@ -151,7 +151,7 @@ impl Simulation {
                 let age_f = rep.age as f64;
                 // Exponential decay with age: exp(-sen * age)
                 let decay = (-sen * age_f).exp();
-                let effective = (rep.survival_rate * decay).max(0.0).min(1.0);
+                let effective = (rep.survival_rate * decay).clamp(0.0, 1.0);
                 **roll < effective
             })
             .map(|(rep, _)| rep.clone())
@@ -237,7 +237,7 @@ impl Simulation {
         // Main simulation loop
         while !self.is_finished() {
             // Display
-            if self.timestep % self.config.display_interval == 0 {
+            if self.timestep.is_multiple_of(self.config.display_interval) {
                 if self.config.live_display() {
                     visualizer.display(self.timestep, &self.population, self.config.capacity);
                     // Small delay to make visualization visible
@@ -249,16 +249,16 @@ impl Simulation {
             }
 
             // Check for keyboard input (Ctrl+C) when in live display mode
-            if self.config.live_display() {
-                if event::poll(Duration::from_millis(0)).unwrap_or(false) {
-                    if let Ok(Event::Key(KeyEvent {
-                        code: KeyCode::Char('c'),
-                        modifiers: KeyModifiers::CONTROL,
-                        ..
-                    })) = event::read()
-                    {
-                        self.interrupted.store(true, Ordering::SeqCst);
-                    }
+            if self.config.live_display()
+                && event::poll(Duration::from_millis(0)).unwrap_or(false)
+            {
+                if let Ok(Event::Key(KeyEvent {
+                    code: KeyCode::Char('c'),
+                    modifiers: KeyModifiers::CONTROL,
+                    ..
+                })) = event::read()
+                {
+                    self.interrupted.store(true, Ordering::SeqCst);
                 }
             }
 
@@ -387,9 +387,11 @@ mod tests {
 
     #[test]
     fn test_simulation_initialization() {
-        let mut config = Config::default();
-        config.appearance_rate = 50.0;
-        config.seed = Some(12345);
+        let config = Config {
+            appearance_rate: 50.0,
+            seed: Some(12345),
+            ..Default::default()
+        };
 
         let sim = Simulation::with_config(config);
         assert!(!sim.population().is_empty());
@@ -399,8 +401,10 @@ mod tests {
 
     #[test]
     fn test_resource_factor() {
-        let mut config = Config::default();
-        config.capacity = 100;
+        let config = Config {
+            capacity: 100,
+            ..Default::default()
+        };
         let mut sim = Simulation::with_config(config);
 
         // Clear population and test factor
@@ -416,10 +420,12 @@ mod tests {
 
     #[test]
     fn test_simulation_stepping_and_aging() {
-        let mut config = Config::default();
-        config.capacity = 200;
-        config.appearance_rate = 20.0;
-        config.seed = Some(42);
+        let config = Config {
+            capacity: 200,
+            appearance_rate: 20.0,
+            seed: Some(42),
+            ..Default::default()
+        };
 
         let mut sim = Simulation::with_config(config);
         let initial_pop = sim.population().len();
@@ -435,10 +441,12 @@ mod tests {
 
     #[test]
     fn test_simulation_determinism() {
-        let mut config1 = Config::default();
-        config1.seed = Some(987654);
-        config1.max_timesteps = 15;
-        config1.capacity = 500;
+        let config1 = Config {
+            seed: Some(987654),
+            max_timesteps: 15,
+            capacity: 500,
+            ..Default::default()
+        };
 
         let config2 = config1.clone();
 
@@ -464,11 +472,13 @@ mod tests {
     #[test]
     fn test_senescence_reduces_survival() {
         // Run with high senescence vs zero senescence
-        let mut config_no_sen = Config::default();
-        config_no_sen.seed = Some(42);
-        config_no_sen.senescence_rate = 0.0;
-        config_no_sen.appearance_rate = 0.0; // no new arrivals
-        config_no_sen.capacity = 100;
+        let config_no_sen = Config {
+            seed: Some(42),
+            senescence_rate: 0.0,
+            appearance_rate: 0.0, // no new arrivals
+            capacity: 100,
+            ..Default::default()
+        };
 
         let mut config_high_sen = config_no_sen.clone();
         config_high_sen.senescence_rate = 0.5; // very rapid aging death
@@ -497,9 +507,11 @@ mod tests {
 
     #[test]
     fn test_simulation_reset() {
-        let mut config = Config::default();
-        config.seed = Some(111);
-        config.capacity = 50;
+        let config = Config {
+            seed: Some(111),
+            capacity: 50,
+            ..Default::default()
+        };
 
         let mut sim = Simulation::with_config(config.clone());
         for _ in 0..5 {
@@ -514,8 +526,10 @@ mod tests {
 
     #[test]
     fn test_winner_profile() {
-        let mut config = Config::default();
-        config.seed = Some(777);
+        let config = Config {
+            seed: Some(777),
+            ..Default::default()
+        };
         let sim = Simulation::with_config(config);
         let winner = sim.winner_profile();
         assert!(winner.is_some());

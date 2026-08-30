@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Run GUI Application",
+      "type": "shell",
+      "command": "cargo run --bin selfish-gene-gui",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "📊 Run CLI Simulation (Live TUI)",
+      "type": "shell",
+      "command": "cargo run --bin selfish-gene",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "⚔️ Run CLI Hawk-Dove ESS Experiment",
+      "type": "shell",
+      "command": "cargo run --bin selfish-gene -- --enable-game-theory --game-resource-value 2.0 --game-injury-cost 10.0 --init-aggression-mean 0.8 --max-timesteps 500",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "🧪 Run Tests",
+      "type": "shell",
+      "command": "cargo test",
+      "group": "test",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "🔍 Run Clippy Linter",
+      "type": "shell",
+      "command": "cargo clippy --all-targets -- -D warnings",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

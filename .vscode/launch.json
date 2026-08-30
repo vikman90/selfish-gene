@@ -1,0 +1,82 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀 Run GUI (GDB / Native Linux)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/selfish-gene-gui",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "🚀 Run GUI Application"
+    },
+    {
+      "name": "📊 Run CLI (GDB / Native Linux)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/selfish-gene",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "📊 Run CLI Simulation (Live TUI)"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "🚀 Run GUI Application (CodeLLDB Extension)",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=selfish-gene-gui",
+          "--package=selfish-gene"
+        ],
+        "filter": {
+          "name": "selfish-gene-gui",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "📊 Run CLI Simulation (CodeLLDB Extension)",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=selfish-gene",
+          "--package=selfish-gene"
+        ],
+        "filter": {
+          "name": "selfish-gene",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "terminal": "integrated"
+    }
+  ]
+}

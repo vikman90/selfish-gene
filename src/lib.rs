@@ -7,6 +7,7 @@
 //! population telemetry, and visualization utilities.
 
 pub mod config;
+pub mod gui;
 pub mod replicator;
 pub mod simulation;
 pub mod stats;

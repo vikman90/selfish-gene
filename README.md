@@ -4,6 +4,8 @@
 
 A high-performance evolution simulator based on Richard Dawkins' **Selfish Gene** theory, implemented in Rust with both a terminal CLI and a native cross-platform Graphical User Interface (GUI).
 
+![Selfish Gene GUI Dashboard](docs/images/gui_dashboard.png)
+
 ## Features
 
 - **Evolutionary simulation engine**: Core biological models (survival, replication, mutation, age senescence).
@@ -121,9 +123,13 @@ The resource factor creates selection pressure:
 
 Senescence introduces an additional evolutionary pressure: higher senescence rates penalize older individuals, favoring traits that reproduce earlier or that maintain higher baseline survival at younger ages.
 
-## Example output
+## Visualizations & Example Output
 
-### Live visualization mode (default)
+### 1. Interactive Graphical User Interface (`selfish-gene-gui`)
+
+The native desktop application (shown in the [preview above](#selfish-gene-simulator-)) provides real-time time-series plots (`egui_plot`), genetic phenotype distribution bars, interactive parameter sliders, and telemetry diagnostics.
+
+### 2. Live Terminal TUI Mode (`selfish-gene`)
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════╗

@@ -24,7 +24,11 @@ pub fn render_controls_bar(
         // Simulation buttons
         if runner_state.is_running() {
             if ui
-                .button(RichText::new("⏸ Pausar").strong().color(Color32::from_rgb(255, 190, 70)))
+                .button(
+                    RichText::new("⏸ Pausar")
+                        .strong()
+                        .color(Color32::from_rgb(255, 190, 70)),
+                )
                 .clicked()
             {
                 action = Some(ControlAction::Pause);
@@ -36,7 +40,11 @@ pub fn render_controls_bar(
                 "▶ Continuar"
             };
             if ui
-                .button(RichText::new(label).strong().color(Color32::from_rgb(100, 220, 100)))
+                .button(
+                    RichText::new(label)
+                        .strong()
+                        .color(Color32::from_rgb(100, 220, 100)),
+                )
                 .clicked()
             {
                 action = Some(ControlAction::Start);

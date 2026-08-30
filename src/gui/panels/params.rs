@@ -28,7 +28,9 @@ pub fn render_params_panel(
 
                 ui.label("Senescencia (δ):");
                 ui.add(Slider::new(&mut config.senescence_rate, 0.0..=0.2).step_by(0.005))
-                    .on_hover_text("Factor de mortalidad exponencial dependiente de la edad (exp(-δ * edad)).");
+                    .on_hover_text(
+                        "Factor de mortalidad exponencial dependiente de la edad (exp(-δ * edad)).",
+                    );
             });
 
         ui.add_space(8.0);
@@ -76,7 +78,9 @@ pub fn render_params_panel(
             .show(ui, |ui| {
                 ui.label("Sigma de mutación (σ):");
                 ui.add(Slider::new(&mut config.mutation_sigma, 0.001..=0.1).step_by(0.001))
-                    .on_hover_text("Desviación estándar del ruido gaussiano añadido a los rasgos al mutar.");
+                    .on_hover_text(
+                        "Desviación estándar del ruido gaussiano añadido a los rasgos al mutar.",
+                    );
 
                 ui.label("Límite de pasos (0 = sin límite):");
                 ui.add(Slider::new(&mut config.max_timesteps, 0..=10_000))
@@ -98,8 +102,10 @@ pub fn render_params_panel(
             .default_open(false)
             .show(ui, |ui| {
                 ui.label("Umbral de varianza:");
-                ui.add(Slider::new(&mut config.convergence_threshold, 0.0001..=0.01).logarithmic(true))
-                    .on_hover_text("Varianza máxima para considerar un rasgo estabilizado.");
+                ui.add(
+                    Slider::new(&mut config.convergence_threshold, 0.0001..=0.01).logarithmic(true),
+                )
+                .on_hover_text("Varianza máxima para considerar un rasgo estabilizado.");
 
                 ui.label("Ventana de estabilidad:");
                 ui.add(Slider::new(&mut config.convergence_window, 5..=200))

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct ProfileBin {
-    survival_bin: u8,   // 0-10 (0.0-1.0 in steps of 0.1)
+    survival_bin: u8,    // 0-10 (0.0-1.0 in steps of 0.1)
     replication_bin: u8, // 0-20 (0.0-2.0 in steps of 0.1)
     mutation_bin: u8,    // 0-5 (0.0-0.05 in steps of 0.01)
 }
@@ -31,11 +31,7 @@ impl ProfileBin {
 }
 
 /// Render the profile distribution histogram panel
-pub fn render_profiles_panel(
-    ui: &mut Ui,
-    population: &[Replicator],
-    top_n: usize,
-) {
+pub fn render_profiles_panel(ui: &mut Ui, population: &[Replicator], top_n: usize) {
     ui.heading("📊 Distribución de Perfiles Genéticos (Fenotipos)");
     ui.label("Agrupación de replicadores activos por rasgos de Supervivencia (S), Replicación (R) y Mutación (M).");
     ui.separator();
@@ -75,9 +71,11 @@ pub fn render_profiles_panel(
                 ui.label(RichText::new(format!("#{:02}", i + 1)).monospace().strong());
                 ui.label(RichText::new(bin.display_label()).monospace());
 
-                let bar = ProgressBar::new(pct as f32)
-                    .show_percentage()
-                    .text(format!("{} ind. ({:.1}%)", count, pct * 100.0));
+                let bar = ProgressBar::new(pct as f32).show_percentage().text(format!(
+                    "{} ind. ({:.1}%)",
+                    count,
+                    pct * 100.0
+                ));
                 ui.add_sized([ui.available_width() - 10.0, 20.0], bar);
             });
             ui.add_space(4.0);

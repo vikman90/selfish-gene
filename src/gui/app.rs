@@ -101,7 +101,8 @@ impl App for SelfishGeneApp {
                                 if self.simulation.has_converged() {
                                     self.runner_state = RunnerState::Converged;
                                 } else if self.simulation.config().max_timesteps > 0
-                                    && self.simulation.timestep() >= self.simulation.config().max_timesteps
+                                    && self.simulation.timestep()
+                                        >= self.simulation.config().max_timesteps
                                 {
                                     self.runner_state = RunnerState::MaxTimestepsReached;
                                 }
@@ -142,11 +143,7 @@ impl App for SelfishGeneApp {
                 );
             }
             ActiveTab::Profiles => {
-                render_profiles_panel(
-                    ui,
-                    self.simulation.population(),
-                    self.config.top_profiles,
-                );
+                render_profiles_panel(ui, self.simulation.population(), self.config.top_profiles);
             }
             ActiveTab::Telemetry => {
                 render_telemetry_panel(

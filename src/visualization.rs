@@ -2,7 +2,7 @@ use crate::replicator::Replicator;
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     execute, queue,
-    terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
 };
 use std::collections::HashMap;
 use std::io::{stdout, Write};
@@ -10,7 +10,7 @@ use std::io::{stdout, Write};
 /// Bins for grouping similar replicators together
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct ProfileBin {
-    survival_bin: u8,   // 0-10 (0.0-1.0 in steps of 0.1)
+    survival_bin: u8,    // 0-10 (0.0-1.0 in steps of 0.1)
     replication_bin: u8, // 0-20 (0.0-2.0 in steps of 0.1)
     mutation_bin: u8,    // 0-5 (0.0-0.05 in steps of 0.01)
 }
@@ -80,19 +80,25 @@ impl LiveVisualizer {
         let mut output = String::new();
 
         // Header
-        output.push_str("╔════════════════════════════════════════════════════════════════════════════╗\r\n");
+        output.push_str(
+            "╔════════════════════════════════════════════════════════════════════════════╗\r\n",
+        );
         output.push_str(&format!(
             "║ Timestep: {:6}  |  Population: {:5} / {:5}                             ║\r\n",
             timestep,
             population.len(),
             capacity
         ));
-        output.push_str("╠════════════════════════════════════════════════════════════════════════════╣\r\n");
+        output.push_str(
+            "╠════════════════════════════════════════════════════════════════════════════╣\r\n",
+        );
 
         // Format "Profile Distribution" line with proper width
         let profile_text = format!("Profile Distribution (Top {} profiles)", self.top_n);
         output.push_str(&format!("║ {:<74} ║\r\n", profile_text));
-        output.push_str("╠════════════════════════════════════════════════════════════════════════════╣\r\n");
+        output.push_str(
+            "╠════════════════════════════════════════════════════════════════════════════╣\r\n",
+        );
 
         // Display top N profiles
         let max_count = sorted.first().map(|(_, count)| *count).unwrap_or(1);
@@ -117,11 +123,18 @@ impl LiveVisualizer {
         // Fill remaining lines with empty rows if we have fewer than top_n profiles
         for _ in sorted.len()..self.top_n {
             // Empty line matching the format: label (20 chars) + bar area (60 chars) + count (6 chars)
-            output.push_str(&format!("║ {:18} │ {} {:>5} ║\r\n", "", " ".repeat(self.max_bar_width), ""));
+            output.push_str(&format!(
+                "║ {:18} │ {} {:>5} ║\r\n",
+                "",
+                " ".repeat(self.max_bar_width),
+                ""
+            ));
         }
 
         // Footer
-        output.push_str("╚════════════════════════════════════════════════════════════════════════════╝\r\n");
+        output.push_str(
+            "╚════════════════════════════════════════════════════════════════════════════╝\r\n",
+        );
         output.push_str("\r\n");
         output.push_str("Legend: S=Survival rate, R=Replication rate, M=Mutation rate\r\n");
 
@@ -149,7 +162,7 @@ impl LiveVisualizer {
             return;
         }
 
-        println!("\n" );
+        println!("\n");
         println!("════════════════════════════════════════════════════════════════");
         println!("                    FINAL POPULATION                            ");
         println!("════════════════════════════════════════════════════════════════");

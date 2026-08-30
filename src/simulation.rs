@@ -249,8 +249,7 @@ impl Simulation {
             }
 
             // Check for keyboard input (Ctrl+C) when in live display mode
-            if self.config.live_display()
-                && event::poll(Duration::from_millis(0)).unwrap_or(false)
+            if self.config.live_display() && event::poll(Duration::from_millis(0)).unwrap_or(false)
             {
                 if let Ok(Event::Key(KeyEvent {
                     code: KeyCode::Char('c'),
@@ -535,4 +534,3 @@ mod tests {
         assert!(winner.is_some());
     }
 }
-

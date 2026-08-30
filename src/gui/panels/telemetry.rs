@@ -28,7 +28,10 @@ pub fn render_telemetry_panel(
                 ui.end_row();
 
                 ui.label("Población activa (N):");
-                ui.label(RichText::new(format!("{} / {}", stats.population_size, config.capacity)).strong());
+                ui.label(
+                    RichText::new(format!("{} / {}", stats.population_size, config.capacity))
+                        .strong(),
+                );
                 ui.end_row();
 
                 ui.label("Factor de Recursos (1 - N/C):");
@@ -37,15 +40,24 @@ pub fn render_telemetry_panel(
                 ui.end_row();
 
                 ui.label("Supervivencia media μ(S):");
-                ui.label(format!("{:.4} (σ = {:.4})", stats.survival_mean, stats.survival_std));
+                ui.label(format!(
+                    "{:.4} (σ = {:.4})",
+                    stats.survival_mean, stats.survival_std
+                ));
                 ui.end_row();
 
                 ui.label("Replicación media μ(R):");
-                ui.label(format!("{:.4} (σ = {:.4})", stats.replication_mean, stats.replication_std));
+                ui.label(format!(
+                    "{:.4} (σ = {:.4})",
+                    stats.replication_mean, stats.replication_std
+                ));
                 ui.end_row();
 
                 ui.label("Mutación media μ(M):");
-                ui.label(format!("{:.4} (σ = {:.4})", stats.mutation_mean, stats.mutation_std));
+                ui.label(format!(
+                    "{:.4} (σ = {:.4})",
+                    stats.mutation_mean, stats.mutation_std
+                ));
                 ui.end_row();
 
                 ui.label("Edad media μ(Age):");
@@ -53,7 +65,11 @@ pub fn render_telemetry_panel(
                 ui.end_row();
 
                 ui.label("Varianza máxima de rasgos:");
-                ui.label(format!("{:.6} (Umbral ESS = {:.6})", stats.max_variance(), config.convergence_threshold));
+                ui.label(format!(
+                    "{:.6} (Umbral ESS = {:.6})",
+                    stats.max_variance(),
+                    config.convergence_threshold
+                ));
                 ui.end_row();
             });
 
@@ -64,9 +80,24 @@ pub fn render_telemetry_panel(
         if let Some(winner) = simulation.winner_profile() {
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    render_trait_badge(ui, "Supervivencia", winner.survival_rate, Color32::from_rgb(80, 180, 250));
-                    render_trait_badge(ui, "Replicación", winner.replication_rate, Color32::from_rgb(100, 230, 120));
-                    render_trait_badge(ui, "Mutación", winner.mutation_rate, Color32::from_rgb(255, 160, 60));
+                    render_trait_badge(
+                        ui,
+                        "Supervivencia",
+                        winner.survival_rate,
+                        Color32::from_rgb(80, 180, 250),
+                    );
+                    render_trait_badge(
+                        ui,
+                        "Replicación",
+                        winner.replication_rate,
+                        Color32::from_rgb(100, 230, 120),
+                    );
+                    render_trait_badge(
+                        ui,
+                        "Mutación",
+                        winner.mutation_rate,
+                        Color32::from_rgb(255, 160, 60),
+                    );
                     ui.label(format!("Edad: {}", winner.age));
                 });
             });
@@ -85,7 +116,10 @@ pub fn render_telemetry_panel(
             if ui.button("📥 Exportar Historial").clicked() {
                 match simulation.history().export_json(export_filename) {
                     Ok(_) => {
-                        *export_status = Some((format!("¡Exportado con éxito a '{}'!", export_filename), true));
+                        *export_status = Some((
+                            format!("¡Exportado con éxito a '{}'!", export_filename),
+                            true,
+                        ));
                     }
                     Err(e) => {
                         *export_status = Some((format!("Error al exportar: {}", e), false));
@@ -95,7 +129,11 @@ pub fn render_telemetry_panel(
         });
 
         if let Some((msg, success)) = export_status {
-            let color = if *success { Color32::LIGHT_GREEN } else { Color32::LIGHT_RED };
+            let color = if *success {
+                Color32::LIGHT_GREEN
+            } else {
+                Color32::LIGHT_RED
+            };
             ui.label(RichText::new(msg.as_str()).color(color));
         }
     });

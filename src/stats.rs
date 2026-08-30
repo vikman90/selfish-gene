@@ -93,7 +93,10 @@ impl PopulationStats {
 
     /// Pretty print for console output
     pub fn display(&self) {
-        println!("Timestep {}: N={}, C=?", self.timestep, self.population_size);
+        println!(
+            "Timestep {}: N={}, C=?",
+            self.timestep, self.population_size
+        );
         println!(
             "  survival:    μ={:.4} σ={:.4}",
             self.survival_mean, self.survival_std
@@ -106,7 +109,10 @@ impl PopulationStats {
             "  mutation:    μ={:.4} σ={:.4}",
             self.mutation_mean, self.mutation_std
         );
-        println!("  age:         μ={:.4} σ={:.4}", self.age_mean, self.age_std);
+        println!(
+            "  age:         μ={:.4} σ={:.4}",
+            self.age_mean, self.age_std
+        );
     }
 }
 
@@ -257,4 +263,3 @@ mod tests {
         assert_eq!(deserialized.final_timestep, 10);
     }
 }
-

@@ -10,6 +10,7 @@ pub struct SeriesToggles {
     pub show_survival: bool,
     pub show_replication: bool,
     pub show_mutation: bool,
+    pub show_aggression: bool,
     pub show_age: bool,
 }
 
@@ -19,6 +20,7 @@ impl Default for SeriesToggles {
             show_survival: true,
             show_replication: true,
             show_mutation: true,
+            show_aggression: true,
             show_age: false,
         }
     }
@@ -36,6 +38,7 @@ pub fn render_time_series_panel(
         ui.checkbox(&mut toggles.show_survival, "Survival (S)");
         ui.checkbox(&mut toggles.show_replication, "Replication (R)");
         ui.checkbox(&mut toggles.show_mutation, "Mutation (M)");
+        ui.checkbox(&mut toggles.show_aggression, "Aggression (A)");
         ui.checkbox(&mut toggles.show_age, "Mean Age (Age)");
     });
 
@@ -115,7 +118,6 @@ pub fn render_time_series_panel(
             }
 
             if toggles.show_mutation {
-                // Scale mutation by 10x for visibility or plot directly
                 let mut_points: PlotPoints = history
                     .stats
                     .iter()
@@ -125,6 +127,20 @@ pub fn render_time_series_panel(
                     Line::new(mut_points)
                         .color(Color32::from_rgb(255, 160, 60))
                         .name("Mutation μ(M)")
+                        .width(2.0_f32),
+                );
+            }
+
+            if toggles.show_aggression {
+                let agg_points: PlotPoints = history
+                    .stats
+                    .iter()
+                    .map(|s| [s.timestep as f64, s.aggression_mean])
+                    .collect();
+                plot_ui.line(
+                    Line::new(agg_points)
+                        .color(Color32::from_rgb(255, 110, 110))
+                        .name("Aggression μ(A)")
                         .width(2.0_f32),
                 );
             }

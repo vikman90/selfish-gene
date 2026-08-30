@@ -5,7 +5,11 @@ Cargo.lock
 *.pdb
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -16,7 +20,6 @@ Cargo.lock
 Thumbs.db
 
 # Output files
-*.json
 results/
 
 # Debug

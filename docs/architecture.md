@@ -63,31 +63,33 @@ graph TD
 - Acts as the single source of truth for all simulation settings and defaults.
 
 ### 2.5 `src/replicator.rs` — Biological Entity Model
-- **`Replicator`:** Represents an individual with traits $(S, R, M)$ and state $a$ (`age`).
+- **`Replicator`:** Represents an individual with traits $(S, R, M, A)$ and state $a$ (`age`), where $A$ is the aggression propensity for Hawk-Dove contests.
 - **`from_distributions()`:** Samples initial traits from Gaussian distributions.
 - **`create_offspring()`:** Clones traits and applies Gaussian mutation noise $\mathcal{N}(0, \sigma_m)$ if a mutation roll passes.
 
 ### 2.6 `src/simulation.rs` — Simulation Engine & Lifecycle
 - Maintains the active population `Vec<Replicator>`, the pseudo-random generator `StdRng`, and the timeline counter `timestep`.
+- Implements pairwise game-theoretic encounters (`resolve_game_interactions()`) applying combat injuries and resource bonuses.
 - Exposes fine-grained methods (`step()`, `reset()`, `initialize_population()`, `winner_profile()`, `history()`) supporting both batch CLI runs and frame-by-frame GUI stepping.
 
 ### 2.7 `src/stats.rs` — Statistical Engine & Convergence Detection
-- **`PopulationStats`:** Computes population size, means ($\mu$), standard deviations ($\sigma$), and age metrics for each timestep.
-- **`ConvergenceDetector`:** Maintains a sliding window (`VecDeque<PopulationStats>`) of size $W$. Detects convergence when $\max(\sigma_S, \sigma_R, \sigma_M) < \epsilon$ for all entries in the window.
+- **`PopulationStats`:** Computes population size, means ($\mu$), standard deviations ($\sigma$), and age metrics for each timestep across all traits $(S, R, M, A)$.
+- **`ConvergenceDetector`:** Maintains a sliding window (`VecDeque<PopulationStats>`) of size $W$. Detects convergence when $\max(\sigma_S, \sigma_R, \sigma_M, \sigma_A) < \epsilon$ for all entries in the window.
 - **`SimulationHistory`:** Serializes the complete timeline to formatted JSON for offline scientific analysis.
 
 ### 2.8 `src/visualization.rs` — Real-Time Terminal User Interface
-- **`ProfileBin`:** Discretizes the continuous 3D trait space into discrete histogram bins:
+- **`ProfileBin`:** Discretizes the continuous 4D trait space into discrete histogram bins:
   - Survival: 10 bins ($0.0 - 1.0$)
   - Replication: 20 bins ($0.0 - 2.0$)
   - Mutation: 5 bins ($0.00 - 0.05$)
+  - Aggression: 10 bins ($0.0 - 1.0$)
 - **`LiveVisualizer`:** Utilizes `crossterm` in raw mode with ANSI escape sequences to render non-flickering ASCII bar charts.
 
 ---
 
 ## 3. Generational Step Lifecycle
 
-The `Simulation::step()` method executes four deterministic phases sequentially:
+The `Simulation::step()` method executes sequential phases:
 
 ```mermaid
 sequenceDiagram
@@ -100,21 +102,25 @@ sequenceDiagram
     Sim->>RNG: Sample Poisson(appearance_rate)
     Sim->>Pop: Push new random replicators (if N < capacity)
 
-    Note over Sim: Step 2: Survival & Senescence
-    Sim->>RNG: Generate survival rolls [0, 1)
-    Sim->>Pop: Retain if roll < S * exp(-senescence * age)
+    Note over Sim: Step 2: Game-Theoretic Encounters (Hawk-Dove)
+    Sim->>Pop: Sample pairwise interactions
+    Sim->>Sim: Calculate payoffs (V, C) and combat injuries
 
-    Note over Sim: Step 3: Replication & Mutation
+    Note over Sim: Step 3: Survival, Senescence & Injuries
+    Sim->>RNG: Generate survival rolls [0, 1)
+    Sim->>Pop: Retain if roll < S * exp(-gamma * age) * f_injury(E)
+
+    Note over Sim: Step 4: Replication & Mutation
     Sim->>Sim: Compute resource_factor = max(0, 1 - N/C)
-    loop For each living Replicator
-        Sim->>Rep: Calculate offspring_count(R * resource_factor)
+    loop For each surviving Replicator
+        Sim->>Rep: Calculate offspring_count((R + E_bonus) * resource_factor)
         loop For each child
             Sim->>Rep: create_offspring(mutation_sigma)
             Sim->>Pop: Collect offspring (up to capacity)
         end
     end
 
-    Note over Sim: Step 4: Age Increment
+    Note over Sim: Step 5: Age Increment
     Sim->>Pop: Increment age by 1 for all individuals
 ```
 

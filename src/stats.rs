@@ -13,6 +13,8 @@ pub struct PopulationStats {
     pub replication_std: f64,
     pub mutation_mean: f64,
     pub mutation_std: f64,
+    pub aggression_mean: f64,
+    pub aggression_std: f64,
     pub age_mean: f64,
     pub age_std: f64,
 }
@@ -30,6 +32,7 @@ impl PopulationStats {
         let survival_mean = population.iter().map(|r| r.survival_rate).sum::<f64>() / n;
         let replication_mean = population.iter().map(|r| r.replication_rate).sum::<f64>() / n;
         let mutation_mean = population.iter().map(|r| r.mutation_rate).sum::<f64>() / n;
+        let aggression_mean = population.iter().map(|r| r.aggression).sum::<f64>() / n;
 
         // Calculate standard deviations
         let survival_variance = population
@@ -45,6 +48,11 @@ impl PopulationStats {
         let mutation_variance = population
             .iter()
             .map(|r| (r.mutation_rate - mutation_mean).powi(2))
+            .sum::<f64>()
+            / n;
+        let aggression_variance = population
+            .iter()
+            .map(|r| (r.aggression - aggression_mean).powi(2))
             .sum::<f64>()
             / n;
 
@@ -64,6 +72,8 @@ impl PopulationStats {
             replication_std: replication_variance.sqrt(),
             mutation_mean,
             mutation_std: mutation_variance.sqrt(),
+            aggression_mean,
+            aggression_std: aggression_variance.sqrt(),
             age_mean,
             age_std: age_variance.sqrt(),
         }
@@ -79,6 +89,8 @@ impl PopulationStats {
             replication_std: 0.0,
             mutation_mean: 0.0,
             mutation_std: 0.0,
+            aggression_mean: 0.0,
+            aggression_std: 0.0,
             age_mean: 0.0,
             age_std: 0.0,
         }
@@ -89,6 +101,7 @@ impl PopulationStats {
         self.survival_std
             .max(self.replication_std)
             .max(self.mutation_std)
+            .max(self.aggression_std)
     }
 
     /// Pretty print for console output
@@ -108,6 +121,10 @@ impl PopulationStats {
         println!(
             "  mutation:    μ={:.4} σ={:.4}",
             self.mutation_mean, self.mutation_std
+        );
+        println!(
+            "  aggression:  μ={:.4} σ={:.4}",
+            self.aggression_mean, self.aggression_std
         );
         println!(
             "  age:         μ={:.4} σ={:.4}",
@@ -210,20 +227,22 @@ mod tests {
         assert_eq!(stats.survival_mean, 0.0);
         assert_eq!(stats.replication_mean, 0.0);
         assert_eq!(stats.mutation_mean, 0.0);
+        assert_eq!(stats.aggression_mean, 0.0);
         assert_eq!(stats.age_mean, 0.0);
     }
 
     #[test]
     fn test_population_stats_calculation() {
         let reps = vec![
-            Replicator::new(0.6, 1.0, 0.01),
-            Replicator::new(0.8, 2.0, 0.03),
+            Replicator::new(0.6, 1.0, 0.01, 0.2),
+            Replicator::new(0.8, 2.0, 0.03, 0.6),
         ];
         let stats = PopulationStats::from_population(1, &reps);
         assert_eq!(stats.population_size, 2);
         assert!((stats.survival_mean - 0.7).abs() < 1e-6);
         assert!((stats.replication_mean - 1.5).abs() < 1e-6);
         assert!((stats.mutation_mean - 0.02).abs() < 1e-6);
+        assert!((stats.aggression_mean - 0.4).abs() < 1e-6);
         assert!(stats.max_variance() > 0.0);
     }
 
@@ -233,8 +252,8 @@ mod tests {
         assert!(!detector.has_converged());
 
         // Create population with low variance
-        let rep1 = Replicator::new(0.8, 1.5, 0.01);
-        let rep2 = Replicator::new(0.801, 1.501, 0.0101);
+        let rep1 = Replicator::new(0.8, 1.5, 0.01, 0.5);
+        let rep2 = Replicator::new(0.801, 1.501, 0.0101, 0.501);
         let low_var_stats = PopulationStats::from_population(1, &[rep1, rep2]);
 
         detector.add(low_var_stats.clone());
@@ -250,7 +269,7 @@ mod tests {
     #[test]
     fn test_simulation_history_serialization() {
         let mut history = SimulationHistory::new();
-        let rep = Replicator::new(0.8, 1.5, 0.01);
+        let rep = Replicator::new(0.8, 1.5, 0.01, 0.3);
         history.add(PopulationStats::from_population(0, &[rep]));
         history.finalize(true, 10);
 

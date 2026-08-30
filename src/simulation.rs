@@ -97,6 +97,8 @@ impl Simulation {
                     self.config.init_replication_std,
                     self.config.init_mutation_mean,
                     self.config.init_mutation_std,
+                    self.config.init_aggression_mean,
+                    self.config.init_aggression_std,
                 )
             })
             .collect();
@@ -107,6 +109,47 @@ impl Simulation {
         let n = self.population.len();
         let c = self.config.capacity;
         (1.0 - (n as f64 / c as f64)).max(0.0)
+    }
+
+    /// Resolve pairwise game-theoretic interactions (Hawk-Dove model).
+    /// Returns a vector of net payoffs for each individual in the current population.
+    pub fn resolve_game_interactions(&mut self) -> Vec<f64> {
+        let n = self.population.len();
+        if n < 2 || self.config.game_interaction_rate <= 0.0 {
+            return vec![0.0; n];
+        }
+
+        let mut payoffs = vec![0.0; n];
+        let v = self.config.game_resource_value;
+        let c = self.config.game_injury_cost;
+        let total_interactions =
+            ((n as f64 * self.config.game_interaction_rate) / 2.0).round() as usize;
+
+        for _ in 0..total_interactions {
+            let idx_a = self.rng.gen_range(0..n);
+            let mut idx_b = self.rng.gen_range(0..n - 1);
+            if idx_b >= idx_a {
+                idx_b += 1;
+            }
+
+            let rep_a = &self.population[idx_a];
+            let rep_b = &self.population[idx_b];
+
+            let a_is_hawk = self.rng.gen::<f64>() < rep_a.aggression;
+            let b_is_hawk = self.rng.gen::<f64>() < rep_b.aggression;
+
+            let (payoff_a, payoff_b) = match (a_is_hawk, b_is_hawk) {
+                (true, true) => ((v - c) / 2.0, (v - c) / 2.0),
+                (true, false) => (v, 0.0),
+                (false, true) => (0.0, v),
+                (false, false) => (v / 2.0, v / 2.0),
+            };
+
+            payoffs[idx_a] += payoff_a;
+            payoffs[idx_b] += payoff_b;
+        }
+
+        payoffs
     }
 
     /// Run one timestep of the simulation
@@ -132,39 +175,61 @@ impl Simulation {
                     self.config.init_replication_std,
                     self.config.init_mutation_mean,
                     self.config.init_mutation_std,
+                    self.config.init_aggression_mean,
+                    self.config.init_aggression_std,
                 ));
             }
         }
 
-        // Step 2: Survival - filter out those who don't survive (age-dependent)
-        // We generate random numbers once to preserve RNG sequence behavior
+        // Step 2: Game-theoretic interactions (Hawk-Dove)
+        let payoffs = if self.config.enable_game_theory {
+            self.resolve_game_interactions()
+        } else {
+            vec![0.0; self.population.len()]
+        };
+
+        // Step 3: Survival - filter out those who don't survive (age & injury-dependent)
         let sen = self.config.senescence_rate;
+        let c_cost = self.config.game_injury_cost.max(1.0);
         let survival_rolls: Vec<f64> = (0..self.population.len())
             .map(|_| self.rng.gen::<f64>())
             .collect();
 
-        self.population = self
+        let mut surviving_pop = Vec::new();
+        let mut surviving_payoffs = Vec::new();
+
+        for (i, (rep, roll)) in self
             .population
             .iter()
             .zip(survival_rolls.iter())
-            .filter(|(rep, roll)| {
-                let age_f = rep.age as f64;
-                // Exponential decay with age: exp(-sen * age)
-                let decay = (-sen * age_f).exp();
-                let effective = (rep.survival_rate * decay).clamp(0.0, 1.0);
-                **roll < effective
-            })
-            .map(|(rep, _)| rep.clone())
-            .collect();
+            .enumerate()
+        {
+            let payoff = payoffs[i];
+            let age_f = rep.age as f64;
+            let decay = (-sen * age_f).exp();
+            let injury_factor = if payoff < 0.0 {
+                (1.0 + (payoff / c_cost)).clamp(0.05, 1.0)
+            } else {
+                1.0
+            };
+            let effective = (rep.survival_rate * decay * injury_factor).clamp(0.0, 1.0);
+            if *roll < effective {
+                surviving_pop.push(rep.clone());
+                surviving_payoffs.push(payoff);
+            }
+        }
+        self.population = surviving_pop;
 
         if !self.population.is_empty() {
-            // Step 3: Replication
+            // Recompute resource factor for the surviving population
             let resource_factor = self.resource_factor();
             let mut offspring = Vec::new();
 
-            for replicator in &self.population {
+            for (i, replicator) in self.population.iter().enumerate() {
+                let payoff = surviving_payoffs[i];
                 let offspring_count = {
-                    let effective_rate = replicator.replication_rate * resource_factor;
+                    let effective_rate =
+                        (replicator.replication_rate + payoff.max(0.0)) * resource_factor;
                     let base = effective_rate.floor() as usize;
                     let fractional = effective_rate - effective_rate.floor();
                     if self.rng.gen::<f64>() < fractional {
@@ -288,6 +353,7 @@ impl Simulation {
                     println!("  survival_rate:    {:.6}", winner.survival_rate);
                     println!("  replication_rate: {:.6}", winner.replication_rate);
                     println!("  mutation_rate:    {:.6}", winner.mutation_rate);
+                    println!("  aggression:       {:.6}", winner.aggression);
                 }
             }
         }
@@ -360,10 +426,12 @@ impl Simulation {
             .min_by(|a, b| {
                 let a_dist = (a.survival_rate - stats.survival_mean).abs()
                     + (a.replication_rate - stats.replication_mean).abs()
-                    + (a.mutation_rate - stats.mutation_mean).abs();
+                    + (a.mutation_rate - stats.mutation_mean).abs()
+                    + (a.aggression - stats.aggression_mean).abs();
                 let b_dist = (b.survival_rate - stats.survival_mean).abs()
                     + (b.replication_rate - stats.replication_mean).abs()
-                    + (b.mutation_rate - stats.mutation_mean).abs();
+                    + (b.mutation_rate - stats.mutation_mean).abs()
+                    + (b.aggression - stats.aggression_mean).abs();
                 a_dist.partial_cmp(&b_dist).unwrap()
             })
             .cloned()
@@ -412,7 +480,7 @@ mod tests {
 
         // Fill population to capacity
         for _ in 0..100 {
-            sim.population.push(Replicator::new(0.8, 1.2, 0.01));
+            sim.population.push(Replicator::new(0.8, 1.2, 0.01, 0.5));
         }
         assert_eq!(sim.resource_factor(), 0.0);
     }
@@ -466,6 +534,7 @@ mod tests {
         assert_eq!(stats1.survival_mean, stats2.survival_mean);
         assert_eq!(stats1.replication_mean, stats2.replication_mean);
         assert_eq!(stats1.mutation_mean, stats2.mutation_mean);
+        assert_eq!(stats1.aggression_mean, stats2.aggression_mean);
     }
 
     #[test]
@@ -488,7 +557,7 @@ mod tests {
         // Seed with identical aged individuals
         let base_reps: Vec<Replicator> = (0..50)
             .map(|_| {
-                let mut r = Replicator::new(0.9, 0.0, 0.0); // no reproduction, high base survival
+                let mut r = Replicator::new(0.9, 0.0, 0.0, 0.5); // no reproduction, high base survival
                 r.age = 10;
                 r
             })
@@ -502,6 +571,32 @@ mod tests {
 
         // High senescence should have fewer survivors among old individuals
         assert!(sim_high_sen.population().len() < sim_no_sen.population().len());
+    }
+
+    #[test]
+    fn test_hawk_dove_payoffs() {
+        let config = Config {
+            seed: Some(42),
+            enable_game_theory: true,
+            game_resource_value: 2.0,
+            game_injury_cost: 10.0,
+            game_interaction_rate: 2.0,
+            capacity: 100,
+            ..Default::default()
+        };
+
+        let mut sim = Simulation::with_config(config);
+        sim.population.clear();
+
+        // Pure Hawks (aggression = 1.0) and Pure Doves (aggression = 0.0)
+        let hawk = Replicator::new(1.0, 1.0, 0.0, 1.0);
+        let dove = Replicator::new(1.0, 1.0, 0.0, 0.0);
+
+        sim.population.push(hawk);
+        sim.population.push(dove);
+
+        let payoffs = sim.resolve_game_interactions();
+        assert_eq!(payoffs.len(), 2);
     }
 
     #[test]

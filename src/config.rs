@@ -77,6 +77,30 @@ pub struct Config {
     /// Senescence rate (age-dependent mortality factor)
     #[arg(long, default_value = "0.0")]
     pub senescence_rate: f64,
+
+    /// Enable pairwise game theory interactions (Hawk-Dove model)
+    #[arg(long)]
+    pub enable_game_theory: bool,
+
+    /// Contested resource payoff value (V) in game interactions
+    #[arg(long, default_value = "2.0")]
+    pub game_resource_value: f64,
+
+    /// Cost of injury (C) in Hawk vs Hawk fights
+    #[arg(long, default_value = "10.0")]
+    pub game_injury_cost: f64,
+
+    /// Mean number of game interactions per individual per timestep
+    #[arg(long, default_value = "1.0")]
+    pub game_interaction_rate: f64,
+
+    /// Initial mean aggression propensity for game interactions
+    #[arg(long, default_value = "0.5")]
+    pub init_aggression_mean: f64,
+
+    /// Initial std dev for aggression propensity
+    #[arg(long, default_value = "0.1")]
+    pub init_aggression_std: f64,
 }
 
 impl Default for Config {
@@ -100,6 +124,12 @@ impl Default for Config {
             output_file: None,
             seed: None,
             senescence_rate: 0.0,
+            enable_game_theory: false,
+            game_resource_value: 2.0,
+            game_injury_cost: 10.0,
+            game_interaction_rate: 1.0,
+            init_aggression_mean: 0.5,
+            init_aggression_std: 0.1,
         }
     }
 }

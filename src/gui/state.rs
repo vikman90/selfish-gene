@@ -26,12 +26,12 @@ impl RunnerState {
 
     pub fn display_label(&self) -> &'static str {
         match self {
-            RunnerState::Idle => "Listo",
-            RunnerState::Running => "Ejecutando...",
-            RunnerState::Paused => "Pausado",
-            RunnerState::Converged => "Convergido (ESS)",
-            RunnerState::MaxTimestepsReached => "Límite alcanzado",
-            RunnerState::Interrupted => "Interrumpido",
+            RunnerState::Idle => "Ready",
+            RunnerState::Running => "Running...",
+            RunnerState::Paused => "Paused",
+            RunnerState::Converged => "Converged (ESS)",
+            RunnerState::MaxTimestepsReached => "Max Steps Reached",
+            RunnerState::Interrupted => "Interrupted",
         }
     }
 }

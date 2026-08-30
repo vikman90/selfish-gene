@@ -32,12 +32,14 @@ impl ProfileBin {
 
 /// Render the profile distribution histogram panel
 pub fn render_profiles_panel(ui: &mut Ui, population: &[Replicator], top_n: usize) {
-    ui.heading("📊 Distribución de Perfiles Genéticos (Fenotipos)");
-    ui.label("Agrupación de replicadores activos por rasgos de Supervivencia (S), Replicación (R) y Mutación (M).");
+    ui.heading("📊 Genetic Profile Distribution (Phenotypes)");
+    ui.label(
+        "Active replicator clusters grouped by Survival (S), Replication (R), and Mutation (M) traits.",
+    );
     ui.separator();
 
     if population.is_empty() {
-        ui.label(RichText::new("Población vacía (extinción)").color(Color32::LIGHT_RED));
+        ui.label(RichText::new("Empty population (extinction)").color(Color32::LIGHT_RED));
         return;
     }
 
@@ -55,11 +57,11 @@ pub fn render_profiles_panel(ui: &mut Ui, population: &[Replicator], top_n: usiz
     let distinct_count = sorted_profiles.len();
 
     ui.horizontal(|ui| {
-        ui.label(format!("Individuos activos: {}", population.len()));
+        ui.label(format!("Active individuals: {}", population.len()));
         ui.separator();
-        ui.label(format!("Perfiles genéticos únicos: {}", distinct_count));
+        ui.label(format!("Unique genetic profiles: {}", distinct_count));
         ui.separator();
-        ui.label(format!("Mostrando top {}", top_n.min(distinct_count)));
+        ui.label(format!("Displaying top {}", top_n.min(distinct_count)));
     });
 
     ui.add_space(8.0);

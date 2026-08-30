@@ -25,7 +25,7 @@ pub fn render_controls_bar(
         if runner_state.is_running() {
             if ui
                 .button(
-                    RichText::new("⏸ Pausar")
+                    RichText::new("⏸ Pause")
                         .strong()
                         .color(Color32::from_rgb(255, 190, 70)),
                 )
@@ -35,9 +35,9 @@ pub fn render_controls_bar(
             }
         } else {
             let label = if runner_state == RunnerState::Idle {
-                "▶ Iniciar"
+                "▶ Start"
             } else {
-                "▶ Continuar"
+                "▶ Resume"
             };
             if ui
                 .button(
@@ -56,28 +56,28 @@ pub fn render_controls_bar(
             && runner_state != RunnerState::MaxTimestepsReached;
 
         if ui
-            .add_enabled(can_step, egui::Button::new("⏭ Paso (+1)"))
+            .add_enabled(can_step, egui::Button::new("⏭ Step (+1)"))
             .clicked()
         {
             action = Some(ControlAction::Step);
         }
 
-        if ui.button("🔄 Reiniciar").clicked() {
+        if ui.button("🔄 Reset").clicked() {
             action = Some(ControlAction::Reset);
         }
 
         ui.separator();
 
         // Speed control
-        ui.label("Velocidad:");
-        ui.add(egui::Slider::new(&mut speed.steps_per_frame, 1..=50).text("pasos/frame"));
+        ui.label("Speed:");
+        ui.add(egui::Slider::new(&mut speed.steps_per_frame, 1..=50).text("steps/frame"));
 
         ui.separator();
 
         // Tabs
-        ui.selectable_value(active_tab, ActiveTab::TimeSeries, "📈 Series Temporales");
-        ui.selectable_value(active_tab, ActiveTab::Profiles, "📊 Perfiles Genéticos");
-        ui.selectable_value(active_tab, ActiveTab::Telemetry, "📋 Telemetría");
+        ui.selectable_value(active_tab, ActiveTab::TimeSeries, "📈 Time Series");
+        ui.selectable_value(active_tab, ActiveTab::Profiles, "📊 Genetic Profiles");
+        ui.selectable_value(active_tab, ActiveTab::Telemetry, "📋 Telemetry");
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let (bg_color, text_color) = match runner_state {

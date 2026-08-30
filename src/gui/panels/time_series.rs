@@ -32,11 +32,11 @@ pub fn render_time_series_panel(
     toggles: &mut SeriesToggles,
 ) {
     ui.horizontal(|ui| {
-        ui.label("Mostrar rasgos:");
-        ui.checkbox(&mut toggles.show_survival, "Supervivencia (S)");
-        ui.checkbox(&mut toggles.show_replication, "Replicación (R)");
-        ui.checkbox(&mut toggles.show_mutation, "Mutación (M)");
-        ui.checkbox(&mut toggles.show_age, "Edad Media (Age)");
+        ui.label("Show traits:");
+        ui.checkbox(&mut toggles.show_survival, "Survival (S)");
+        ui.checkbox(&mut toggles.show_replication, "Replication (R)");
+        ui.checkbox(&mut toggles.show_mutation, "Mutation (M)");
+        ui.checkbox(&mut toggles.show_age, "Mean Age (Age)");
     });
 
     ui.separator();
@@ -46,7 +46,7 @@ pub fn render_time_series_panel(
     let bottom_height = (total_height * 0.48).max(140.0);
 
     // --- Top Plot: Population vs Capacity ---
-    ui.label(egui::RichText::new("Población Total N(t) vs Capacidad C").strong());
+    ui.label(egui::RichText::new("Total Population N(t) vs Capacity C").strong());
     Plot::new("population_plot")
         .height(top_height)
         .legend(Legend::default())
@@ -59,7 +59,7 @@ pub fn render_time_series_panel(
                 .collect();
             let pop_line = Line::new(pop_points)
                 .color(Color32::from_rgb(100, 200, 255))
-                .name("Población N(t)")
+                .name("Population N(t)")
                 .width(2.0_f32);
             plot_ui.line(pop_line);
 
@@ -71,7 +71,7 @@ pub fn render_time_series_panel(
                 ];
                 let cap_line = Line::new(cap_points)
                     .color(Color32::from_rgb(240, 100, 100))
-                    .name("Capacidad C")
+                    .name("Capacity C")
                     .style(egui_plot::LineStyle::Dashed { length: 8.0 });
                 plot_ui.line(cap_line);
             }
@@ -80,7 +80,7 @@ pub fn render_time_series_panel(
     ui.add_space(8.0);
 
     // --- Bottom Plot: Trait Means ---
-    ui.label(egui::RichText::new("Evolución de Rasgos Fenotípicos Medios").strong());
+    ui.label(egui::RichText::new("Mean Phenotypic Trait Trajectories").strong());
     Plot::new("traits_plot")
         .height(bottom_height)
         .legend(Legend::default())
@@ -95,7 +95,7 @@ pub fn render_time_series_panel(
                 plot_ui.line(
                     Line::new(surv_points)
                         .color(Color32::from_rgb(80, 180, 250))
-                        .name("Supervivencia μ(S)")
+                        .name("Survival μ(S)")
                         .width(2.0_f32),
                 );
             }
@@ -109,7 +109,7 @@ pub fn render_time_series_panel(
                 plot_ui.line(
                     Line::new(rep_points)
                         .color(Color32::from_rgb(100, 230, 120))
-                        .name("Replicación μ(R)")
+                        .name("Replication μ(R)")
                         .width(2.0_f32),
                 );
             }
@@ -124,7 +124,7 @@ pub fn render_time_series_panel(
                 plot_ui.line(
                     Line::new(mut_points)
                         .color(Color32::from_rgb(255, 160, 60))
-                        .name("Mutación μ(M)")
+                        .name("Mutation μ(M)")
                         .width(2.0_f32),
                 );
             }
@@ -138,7 +138,7 @@ pub fn render_time_series_panel(
                 plot_ui.line(
                     Line::new(age_points)
                         .color(Color32::from_rgb(200, 130, 255))
-                        .name("Edad media μ(Age)")
+                        .name("Mean Age μ(Age)")
                         .width(1.5_f32),
                 );
             }

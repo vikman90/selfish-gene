@@ -11,83 +11,83 @@ pub fn render_params_panel(
     seed_input: &mut u64,
     on_reset: &mut bool,
 ) {
-    ui.heading("⚙ Parámetros");
+    ui.heading("⚙ Parameters");
     ui.separator();
 
     egui::ScrollArea::vertical().show(ui, |ui| {
-        CollapsingHeader::new("🌐 Capacidad y Entorno")
+        CollapsingHeader::new("🌐 Capacity & Environment")
             .default_open(true)
             .show(ui, |ui| {
-                ui.label("Capacidad de carga (C):");
+                ui.label("Carrying capacity (C):");
                 ui.add(Slider::new(&mut config.capacity, 100..=50_000).logarithmic(true))
-                    .on_hover_text("Límite máximo de replicadores que el entorno puede sostener.");
+                    .on_hover_text("Maximum number of replicators the environment can sustain.");
 
-                ui.label("Tasa de aparición (λ):");
+                ui.label("Appearance rate (λ):");
                 ui.add(Slider::new(&mut config.appearance_rate, 0.0..=1000.0))
-                    .on_hover_text("Tasa de generación espontánea por distribución de Poisson.");
+                    .on_hover_text("Spontaneous arrival rate sampled from a Poisson distribution.");
 
-                ui.label("Senescencia (δ):");
+                ui.label("Senescence (δ):");
                 ui.add(Slider::new(&mut config.senescence_rate, 0.0..=0.2).step_by(0.005))
                     .on_hover_text(
-                        "Factor de mortalidad exponencial dependiente de la edad (exp(-δ * edad)).",
+                        "Age-dependent mortality factor with exponential decay: exp(-δ * age).",
                     );
             });
 
         ui.add_space(8.0);
 
-        CollapsingHeader::new("🧬 Rasgos Iniciales")
+        CollapsingHeader::new("🧬 Initial Traits")
             .default_open(true)
             .show(ui, |ui| {
-                ui.strong("Supervivencia (S):");
+                ui.strong("Survival (S):");
                 ui.horizontal(|ui| {
-                    ui.label("Media:");
+                    ui.label("Mean:");
                     ui.add(Slider::new(&mut config.init_survival_mean, 0.0..=1.0).step_by(0.01));
                 });
                 ui.horizontal(|ui| {
-                    ui.label("Desv. Est:");
+                    ui.label("Std Dev:");
                     ui.add(Slider::new(&mut config.init_survival_std, 0.0..=0.5).step_by(0.01));
                 });
 
                 ui.separator();
-                ui.strong("Replicación (R):");
+                ui.strong("Replication (R):");
                 ui.horizontal(|ui| {
-                    ui.label("Media:");
+                    ui.label("Mean:");
                     ui.add(Slider::new(&mut config.init_replication_mean, 0.0..=5.0).step_by(0.05));
                 });
                 ui.horizontal(|ui| {
-                    ui.label("Desv. Est:");
+                    ui.label("Std Dev:");
                     ui.add(Slider::new(&mut config.init_replication_std, 0.0..=1.0).step_by(0.01));
                 });
 
                 ui.separator();
-                ui.strong("Mutación (M):");
+                ui.strong("Mutation (M):");
                 ui.horizontal(|ui| {
-                    ui.label("Media:");
+                    ui.label("Mean:");
                     ui.add(Slider::new(&mut config.init_mutation_mean, 0.0..=0.2).step_by(0.001));
                 });
                 ui.horizontal(|ui| {
-                    ui.label("Desv. Est:");
+                    ui.label("Std Dev:");
                     ui.add(Slider::new(&mut config.init_mutation_std, 0.0..=0.05).step_by(0.001));
                 });
             });
 
         ui.add_space(8.0);
 
-        CollapsingHeader::new("📈 Dinámica Evolutiva")
+        CollapsingHeader::new("📈 Evolutionary Dynamics")
             .default_open(true)
             .show(ui, |ui| {
-                ui.label("Sigma de mutación (σ):");
+                ui.label("Mutation sigma (σ):");
                 ui.add(Slider::new(&mut config.mutation_sigma, 0.001..=0.1).step_by(0.001))
                     .on_hover_text(
-                        "Desviación estándar del ruido gaussiano añadido a los rasgos al mutar.",
+                        "Standard deviation of Gaussian noise added to heritable traits during mutation.",
                     );
 
-                ui.label("Límite de pasos (0 = sin límite):");
+                ui.label("Max timesteps (0 = unlimited):");
                 ui.add(Slider::new(&mut config.max_timesteps, 0..=10_000))
-                    .on_hover_text("Número máximo de generaciones antes de finalizar.");
+                    .on_hover_text("Maximum number of generations before stopping.");
 
                 ui.horizontal(|ui| {
-                    if ui.checkbox(use_seed, "Fijar semilla (Seed)").changed() {
+                    if ui.checkbox(use_seed, "Fix PRNG Seed").changed() {
                         config.seed = if *use_seed { Some(*seed_input) } else { None };
                     }
                     if *use_seed && ui.add(egui::DragValue::new(seed_input)).changed() {
@@ -98,29 +98,29 @@ pub fn render_params_panel(
 
         ui.add_space(8.0);
 
-        CollapsingHeader::new("🎯 Convergencia")
+        CollapsingHeader::new("🎯 Convergence")
             .default_open(false)
             .show(ui, |ui| {
-                ui.label("Umbral de varianza:");
+                ui.label("Variance threshold:");
                 ui.add(
                     Slider::new(&mut config.convergence_threshold, 0.0001..=0.01).logarithmic(true),
                 )
-                .on_hover_text("Varianza máxima para considerar un rasgo estabilizado.");
+                .on_hover_text("Maximum trait variance required to declare genetic stability (ESS).");
 
-                ui.label("Ventana de estabilidad:");
+                ui.label("Stability window:");
                 ui.add(Slider::new(&mut config.convergence_window, 5..=200))
-                    .on_hover_text("Número de timesteps consecutivos que deben cumplir el umbral.");
+                    .on_hover_text("Number of consecutive generations that must stay below variance threshold.");
 
-                ui.label("Perfiles principales a mostrar:");
+                ui.label("Top profiles to display:");
                 ui.add(Slider::new(&mut config.top_profiles, 5..=30));
             });
 
         ui.add_space(16.0);
         ui.horizontal(|ui| {
-            if ui.button("🔄 Aplicar y Reiniciar").clicked() {
+            if ui.button("🔄 Apply & Reset").clicked() {
                 *on_reset = true;
             }
-            if ui.button("Restablecer por defecto").clicked() {
+            if ui.button("Reset to Defaults").clicked() {
                 *config = Config::default();
                 *use_seed = false;
                 *on_reset = true;

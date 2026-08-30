@@ -26,12 +26,13 @@ In classical evolutionary biology, natural selection was often loosely described
 
 Each individual replicator $i$ is defined by a trait vector $\mathbf{x}_i$ and an age counter $a_i \in \mathbb{N}_0$:
 
-$$\mathbf{x}_i = \begin{pmatrix} S_i \\ R_i \\ M_i \end{pmatrix}$$
+$$\mathbf{x}_i = \begin{pmatrix} S_i \\ R_i \\ M_i \\ A_i \end{pmatrix}$$
 
 Where:
 - $S_i \in [0.0, 1.0]$: Base probability of surviving a discrete timestep.
 - $R_i \in [0.0, \infty)$: Baseline expected offspring produced per timestep.
 - $M_i \in [0.0, 1.0]$: Probability of mutation occurring during replication.
+- $A_i \in [0.0, 1.0]$: Heritable aggression propensity ($1.0 = \text{Pure Hawk}$, $0.0 = \text{Pure Dove}$).
 - $a_i \in \mathbb{N}_0$: Age in elapsed timesteps since creation ($a_i = 0$ for newborns).
 
 ---
@@ -52,6 +53,8 @@ $$R_{\text{init}} \sim \text{clamp}_{[0, \infty)}\left(\mathcal{N}(\mu_R, \sigma
 
 $$M_{\text{init}} \sim \text{clamp}_{[0, 1]}\left(\mathcal{N}(\mu_M, \sigma_M)\right)$$
 
+$$A_{\text{init}} \sim \text{clamp}_{[0, 1]}\left(\mathcal{N}(\mu_A, \sigma_A)\right)$$
+
 ---
 
 ### 2.3 Environmental Carrying Capacity & Resource Pressure
@@ -62,7 +65,7 @@ $$\Phi(N_t) = \max\left(0,\ 1 - \frac{N_t}{C}\right)$$
 
 The effective replication rate for replicator $i$ becomes:
 
-$$R_{i, \text{effective}} = R_i \cdot \Phi(N_t)$$
+$$R_{i, \text{effective}} = (R_i + E_{i, +}) \cdot \Phi(N_t)$$
 
 The discrete number of offspring $O_i$ produced by replicator $i$ in a timestep is:
 
@@ -72,18 +75,15 @@ where $U \sim \text{Uniform}(0, 1)$ and $\mathbb{I}$ is the indicator function.
 
 ---
 
-### 2.4 Survival and Senescence Dynamics
+### 2.4 Survival, Senescence, and Combat Injury Dynamics
 
-In nature, genes that express lethal effects early in life are rapidly purged by natural selection, while genes with deleterious effects expressed later in life (after reproduction) accumulate—a theory formalized by **Peter Medawar (1952)** and **George C. Williams (1957)**, discussed extensively in Dawkins (*Chapter 3*).
+In nature, genes that express lethal effects early in life are rapidly purged by natural selection, while genes with deleterious effects expressed later in life (after reproduction) accumulate—a theory formalized by **Peter Medawar (1952)** and **George C. Williams (1957)**, discussed extensively in Dawkins (*Chapter 3*). Furthermore, aggressive physical conflicts entail serious risk of injury or death (*Chapter 5*).
 
-In this simulator, senescence is modeled as an exponential decay of survival probability with age $a_i$:
+In this simulator, mortality combines senescence with combat injuries:
 
-$$S_{i, \text{effective}}(a_i) = \text{clamp}_{[0, 1]}\left( S_i \cdot e^{-\gamma \cdot a_i} \right)$$
+$$S_{i, \text{effective}}(a_i, E_i) = \text{clamp}_{[0, 1]}\left( S_i \cdot e^{-\gamma \cdot a_i} \cdot f_{\text{injury}}(E_i) \right)$$
 
-where $\gamma \ge 0$ is the `--senescence-rate`.
-
-- When $\gamma = 0$: Age does not degrade survival ($S_{\text{eff}} = S_i$).
-- When $\gamma > 0$: Mortality accelerates with age, exerting evolutionary pressure favoring early reproduction.
+where $\gamma \ge 0$ is the `--senescence-rate`, and $f_{\text{injury}}(E_i) = \max\left(0.05, 1.0 + \frac{E_i}{C_{\text{cost}}}\right)$ when net game payoff $E_i < 0$.
 
 ---
 
@@ -98,10 +98,34 @@ If mutation occurs, all traits undergo independent Gaussian perturbations with n
 $$\begin{aligned}
 S_{\text{child}} &= \text{clamp}_{[0, 1]}\left(S_i + \delta_S\right), \quad &\delta_S \sim \mathcal{N}(0, \sigma_{\text{mutation}}) \\
 R_{\text{child}} &= \text{clamp}_{[0, \infty)}\left(R_i + \delta_R\right), \quad &\delta_R \sim \mathcal{N}(0, \sigma_{\text{mutation}}) \\
-M_{\text{child}} &= \text{clamp}_{[0, 1]}\left(M_i + \delta_M\right), \quad &\delta_M \sim \mathcal{N}(0, \sigma_{\text{mutation}})
+M_{\text{child}} &= \text{clamp}_{[0, 1]}\left(M_i + \delta_M\right), \quad &\delta_M \sim \mathcal{N}(0, \sigma_{\text{mutation}}) \\
+A_{\text{child}} &= \text{clamp}_{[0, 1]}\left(A_i + \delta_A\right), \quad &\delta_A \sim \mathcal{N}(0, \sigma_{\text{mutation}})
 \end{aligned}$$
 
 If no mutation occurs, the offspring inherits exact copies of the parental traits, with age reset to zero ($a_{\text{child}} = 0$).
+
+---
+
+### 2.6 Evolutionary Game Theory & ESS (Hawk-Dove Model)
+
+In Chapter 5 of *The Selfish Gene*, Dawkins formalizes John Maynard Smith's **Evolutionarily Stable Strategy (ESS)**. Replicators participate in pairwise competitive encounters for a contested resource of value $V$, risking fighting injury cost $C$.
+
+#### Payoff Matrix:
+| Player $i$ \ Player $j$ | Hawk | Dove |
+| :--- | :---: | :---: |
+| **Hawk** | $\frac{V - C}{2}$ | $V$ |
+| **Dove** | $0$ | $\frac{V}{2}$ |
+
+#### ESS Equilibrium Derivation:
+In a population where fraction $p$ plays Hawk and $1-p$ plays Dove:
+$$E(\text{Hawk}) = p \cdot \frac{V - C}{2} + (1 - p) \cdot V = V - p \cdot \frac{V + C}{2}$$
+$$E(\text{Dove}) = p \cdot 0 + (1 - p) \cdot \frac{V}{2} = (1 - p) \cdot \frac{V}{2}$$
+
+At evolutionary equilibrium ($E(\text{Hawk}) = E(\text{Dove})$):
+$$V - p \frac{V + C}{2} = \frac{V}{2} - p \frac{V}{2} \iff p^* = \frac{V}{C}$$
+
+- **When $V \ge C$:** Hawk is unconditionally ESS ($p^* = 1.0$).
+- **When $C > V$:** A mixed/polymorphic equilibrium emerges at $p^* = \frac{V}{C}$.
 
 ---
 
@@ -113,6 +137,8 @@ If no mutation occurs, the offspring inherits exact copies of the parental trait
    Because resource availability $\Phi(N)$ drops as $N \to C$, excessively high $R$ leads to boom-and-bust overshoot, whereas balanced $R$ provides sustained lineage dominance.
 3. **Mutation Rate Stabilization ($M \to 0.005 - 0.01$):**
    High mutation rates destroy well-adapted genomes (error catastrophe), while zero mutation prevents adaptation to changing densities.
+4. **Dynamic ESS Convergence ($A \to V/C$):**
+   When game theory is active with $C > V$, the population mean aggression self-organizes to the theoretical ESS ratio $p^* = V/C$.
 
 ---
 

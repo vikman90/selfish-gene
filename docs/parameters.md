@@ -16,6 +16,12 @@ This document provides a comprehensive technical reference for all configuration
 | `--init-replication-std` | `f64` | `0.2` | $[0.0, \infty)$ | Initial Traits | Std dev of base replication rate ($\sigma_R$) |
 | `--init-mutation-mean` | `f64` | `0.01` | $[0.0, 1.0]$ | Initial Traits | Mean mutation probability ($\mu_M$) |
 | `--init-mutation-std` | `f64` | `0.005` | $[0.0, \infty)$ | Initial Traits | Std dev of mutation probability ($\sigma_M$) |
+| `--init-aggression-mean` | `f64` | `0.5` | $[0.0, 1.0]$ | Initial Traits | Mean aggression propensity ($\mu_A$) |
+| `--init-aggression-std` | `f64` | `0.1` | $[0.0, \infty)$ | Initial Traits | Std dev of aggression propensity ($\sigma_A$) |
+| `--enable-game-theory` | `bool` | `false` | `bool` | Game Theory | Enable pairwise Hawk-Dove encounters |
+| `--game-resource-value` | `f64` | `2.0` | $[0.0, \infty)$ | Game Theory | Resource payoff value ($V$) |
+| `--game-injury-cost` | `f64` | `10.0` | $[0.0, \infty)$ | Game Theory | Fighting injury cost in Hawk-Hawk combat ($C$) |
+| `--game-interaction-rate` | `f64` | `1.0` | $[0.0, \infty)$ | Game Theory | Mean encounters per individual per timestep ($\rho$) |
 | `--mutation-sigma` | `f64` | `0.02` | $[0.0, \infty)$ | Evolution | Std dev of Gaussian mutation noise ($\sigma_m$) |
 | `--senescence-rate` | `f64` | `0.0` | $[0.0, \infty)$ | Evolution | Age-dependent mortality factor ($\gamma$) |
 | `-t`, `--max-timesteps` | `usize` | `1000` | $[0, \infty)$ | Execution | Max iterations ($0 = \text{unlimited}$) |
@@ -49,21 +55,32 @@ This document provides a comprehensive technical reference for all configuration
 
 ### 2.2 Initial Trait Distributions
 
-When a new replicator is generated from the environment (either at initialization or through appearance), its traits $(S, R, M)$ are independently sampled:
+When a new replicator is generated from the environment (either at initialization or through appearance), its traits $(S, R, M, A)$ are independently sampled:
 
 ```text
 Survival Rate:    S ~ Normal(init_survival_mean,    init_survival_std),    clamped to [0.0, 1.0]
 Replication Rate: R ~ Normal(init_replication_mean, init_replication_std), clamped to [0.0, +inf)
 Mutation Rate:    M ~ Normal(init_mutation_mean,    init_mutation_std),    clamped to [0.0, 1.0]
+Aggression:       A ~ Normal(init_aggression_mean,  init_aggression_std),  clamped to [0.0, 1.0]
 ```
 
-- **Survival ($S$):** Probability of surviving a single timestep without aging effects.
+- **Survival ($S$):** Probability of surviving a single timestep without aging or injury effects.
 - **Replication ($R$):** Expected number of offspring before environmental scaling $\Phi(N)$.
 - **Mutation ($M$):** Probability that a replication event perturbs traits in the offspring.
+- **Aggression ($A$):** Propensity to choose the aggressive **Hawk** strategy in pairwise resource contests.
 
 ---
 
-### 2.3 Evolutionary Mechanics & Senescence
+### 2.3 Evolutionary Mechanics, Senescence & Game Theory
+
+#### `--enable-game-theory`
+- **Default:** `false`
+- **Role:** Activates pairwise Hawk-Dove encounters each timestep before survival and reproduction.
+
+#### `--game-resource-value <V>` & `--game-injury-cost <C>`
+- **Defaults:** $V = 2.0$, $C = 10.0$
+- **Theoretical ESS:** $p^* = \min(1.0, V / C)$.
+- **Role:** Sets the contested resource benefit and the injury mortality penalty suffered during Hawk-Hawk conflict.
 
 #### `--mutation-sigma <SIGMA>`
 - **Default:** `0.02`
@@ -88,7 +105,7 @@ The simulation terminates when any of the following occur:
 
 #### Convergence Formula:
 For a sliding window of length $W$ (`--convergence-window`):
-$$\max\left(\sigma_S(t), \sigma_R(t), \sigma_M(t)\right) < \epsilon \quad \forall t \in [T - W + 1, T]$$
+$$\max\left(\sigma_S(t), \sigma_R(t), \sigma_M(t), \sigma_A(t)\right) < \epsilon \quad \forall t \in [T - W + 1, T]$$
 where $\epsilon$ is `--convergence-threshold`.
 
 ---
@@ -104,22 +121,23 @@ selfish-gene \
   --mutation-sigma 0.01
 ```
 
-### Experiment 2: Deterministic Baseline with JSON Telemetry
+### Experiment 2: Hawk-Dove ESS Equilibrium ($p^* = 0.20$)
+```bash
+selfish-gene \
+  --enable-game-theory \
+  --game-resource-value 2.0 \
+  --game-injury-cost 10.0 \
+  --max-timesteps 500 \
+  --init-aggression-mean 0.8
+```
+
+### Experiment 3: Deterministic Baseline with JSON Telemetry
 ```bash
 selfish-gene \
   --seed 42 \
   --max-timesteps 500 \
   --output-file experiment_seed42.json \
   --no-live-display
-```
-
-### Experiment 3: High Mutation / Rapid Exploration
-```bash
-selfish-gene \
-  --init-mutation-mean 0.05 \
-  --mutation-sigma 0.05 \
-  --convergence-threshold 0.0005 \
-  --convergence-window 100
 ```
 
 ---
@@ -136,6 +154,11 @@ When launching the graphic interface via `cargo run --bin selfish-gene-gui`, all
 | **Initial Traits** | Survival $\mu_S, \sigma_S$ | $\mu \in [0, 1], \sigma \in [0, 0.5]$ | Initial survival normal distribution. |
 | | Replication $\mu_R, \sigma_R$ | $\mu \in [0, 5], \sigma \in [0, 1.0]$ | Initial replication rate normal distribution. |
 | | Mutation $\mu_M, \sigma_M$ | $\mu \in [0, 0.2], \sigma \in [0, 0.05]$ | Initial mutation probability normal distribution. |
+| | Aggression $\mu_A, \sigma_A$ | $\mu \in [0, 1], \sigma \in [0, 0.5]$ | Initial aggression propensity normal distribution. |
+| **Evolutionary Game & ESS** | Enable Game Theory | Checkbox | Toggle pairwise Hawk-Dove interactions. |
+| | Resource Value ($V$) | `0.1` ..= `20.0` | Payoff gained from contested resource. |
+| | Injury Cost ($C$) | `0.1` ..= `50.0` | Combat injury penalty from Hawk-Hawk fight. |
+| | Interaction Rate ($\rho$) | `0.1` ..= `10.0` | Average encounters per individual per step. |
 | **Evolutionary Dynamics** | Mutation sigma ($\sigma$) | `0.001` ..= `0.1` | Gaussian noise added on mutation. |
 | | Max timesteps ($t_{\max}$) | `0` ..= `10,000` | Generation limit (0 = infinite). |
 | | PRNG Seed | Checkbox + numeric | Deterministic PRNG seed for exact reproducibility. |

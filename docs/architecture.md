@@ -8,40 +8,75 @@ This document details the software architecture, module responsibilities, execut
 
 ```mermaid
 graph TD
-    Main["src/main.rs<br><b>CLI & Signal Handling</b>"] --> Config["src/config.rs<br><b>Config (Clap + Serde)</b>"]
-    Main --> Sim["src/simulation.rs<br><b>Simulation Engine</b>"]
-    Sim --> Rep["src/replicator.rs<br><b>Replicator Entity</b>"]
-    Sim --> Stats["src/stats.rs<br><b>PopulationStats & Convergence</b>"]
-    Sim --> Vis["src/visualization.rs<br><b>LiveVisualizer (Crossterm)</b>"]
+    subgraph Core ["Core Library (src/lib.rs)"]
+        Config["src/config.rs<br><b>Config (Clap + Serde)</b>"]
+        Sim["src/simulation.rs<br><b>Simulation Engine</b>"]
+        Rep["src/replicator.rs<br><b>Replicator Entity</b>"]
+        Stats["src/stats.rs<br><b>PopulationStats & Convergence</b>"]
+        Vis["src/visualization.rs<br><b>LiveVisualizer (Crossterm)</b>"]
+    end
+
+    subgraph Binaries ["Executables"]
+        CLI["src/main.rs<br><b>CLI Binary (selfish-gene)</b>"]
+        GUI["src/bin/gui.rs<br><b>GUI Binary (selfish-gene-gui)</b>"]
+    end
+
+    subgraph GUIModules ["GUI Components (src/gui/)"]
+        App["src/gui/app.rs<br><b>SelfishGeneApp (eframe::App)</b>"]
+        Panels["src/gui/panels/<br><b>Params, Controls, Plots, Telemetry</b>"]
+    end
+
+    CLI --> Sim
+    CLI --> Vis
+    CLI --> Config
+    GUI --> App
+    App --> Sim
+    App --> Panels
+    Sim --> Rep
+    Sim --> Stats
+    Sim --> Config
 ```
 
 ---
 
 ## 2. Module Responsibilities
 
-### 2.1 `src/main.rs` — Application Entrypoint
-- **Signal Handling:** Uses `signal_hook` to catch `SIGINT` (Ctrl+C) and `SIGTERM`, setting an `Arc<AtomicBool>` flag.
-- **Initialization:** Parses CLI arguments into `Config` and instantiates the `Simulation` runner.
+### 2.1 `src/lib.rs` — Core Library Re-exports
+- Re-exports domain types (`Replicator`, `Simulation`, `Config`, `PopulationStats`, `ConvergenceDetector`, `SimulationHistory`, `LiveVisualizer`).
+- Provides public API for headless simulations, tests, CLI, and GUI consumers.
 
-### 2.2 `src/config.rs` — Configuration & CLI Schema
+### 2.2 `src/main.rs` — CLI Entrypoint (`selfish-gene`)
+- **Signal Handling:** Uses `signal_hook` to catch `SIGINT` (Ctrl+C) and `SIGTERM`, setting an `Arc<AtomicBool>` flag.
+- **Initialization:** Parses CLI arguments into `Config` and instantiates the `Simulation` runner with terminal visualization.
+
+### 2.3 `src/bin/gui.rs` & `src/gui/` — GUI Application (`selfish-gene-gui`)
+- **`src/bin/gui.rs`:** Sets window dimensions, icons, and launches `eframe::run_native`.
+- **`src/gui/app.rs` (`SelfishGeneApp`):** Implements `eframe::App`, orchestrating frame updates, continuous simulation ticks, and panel rendering.
+- **`src/gui/panels/params.rs`:** Categorized parameter sliders and drag values with live validation and tooltips.
+- **`src/gui/panels/controls.rs`:** Play/Pause/Step/Reset toolbar, simulation speed slider, and status badges.
+- **`src/gui/panels/time_series.rs`:** Multi-line real-time plotting with `egui_plot` for $N(t)$ vs $C$, trait means $(\bar{S}, \bar{R}, \bar{M})$, and variances.
+- **`src/gui/panels/profiles.rs`:** Ranked phenotype distribution bar chart matching Dawkinsian trait bins.
+- **`src/gui/panels/telemetry.rs`:** Ecosystem metrics grid, ESS winner profile card, and JSON export button.
+
+### 2.4 `src/config.rs` — Configuration & CLI Schema
 - **`Config` Struct:** Derives `clap::Parser`, `serde::Serialize`, and `serde::Deserialize`.
 - Acts as the single source of truth for all simulation settings and defaults.
 
-### 2.3 `src/replicator.rs` — Biological Entity Model
+### 2.5 `src/replicator.rs` — Biological Entity Model
 - **`Replicator`:** Represents an individual with traits $(S, R, M)$ and state $a$ (`age`).
 - **`from_distributions()`:** Samples initial traits from Gaussian distributions.
 - **`create_offspring()`:** Clones traits and applies Gaussian mutation noise $\mathcal{N}(0, \sigma_m)$ if a mutation roll passes.
 
-### 2.4 `src/simulation.rs` — Simulation Engine & Lifecycle
+### 2.6 `src/simulation.rs` — Simulation Engine & Lifecycle
 - Maintains the active population `Vec<Replicator>`, the pseudo-random generator `StdRng`, and the timeline counter `timestep`.
-- Controls the discrete generational loop and evaluates termination conditions.
+- Exposes fine-grained methods (`step()`, `reset()`, `initialize_population()`, `winner_profile()`, `history()`) supporting both batch CLI runs and frame-by-frame GUI stepping.
 
-### 2.5 `src/stats.rs` — Statistical Engine & Convergence Detection
+### 2.7 `src/stats.rs` — Statistical Engine & Convergence Detection
 - **`PopulationStats`:** Computes population size, means ($\mu$), standard deviations ($\sigma$), and age metrics for each timestep.
 - **`ConvergenceDetector`:** Maintains a sliding window (`VecDeque<PopulationStats>`) of size $W$. Detects convergence when $\max(\sigma_S, \sigma_R, \sigma_M) < \epsilon$ for all entries in the window.
 - **`SimulationHistory`:** Serializes the complete timeline to formatted JSON for offline scientific analysis.
 
-### 2.6 `src/visualization.rs` — Real-Time Terminal User Interface
+### 2.8 `src/visualization.rs` — Real-Time Terminal User Interface
 - **`ProfileBin`:** Discretizes the continuous 3D trait space into discrete histogram bins:
   - Survival: 10 bins ($0.0 - 1.0$)
   - Replication: 20 bins ($0.0 - 2.0$)

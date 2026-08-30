@@ -121,3 +121,25 @@ selfish-gene \
   --convergence-threshold 0.0005 \
   --convergence-window 100
 ```
+
+---
+
+## 4. Interactive GUI Dashboard Controls (`selfish-gene-gui`)
+
+When launching the graphic interface via `cargo run --bin selfish-gene-gui`, all parameters can be adjusted interactively in the sidebar:
+
+| Section | Parameter / Slider | GUI Range | Description |
+| :--- | :--- | :--- | :--- |
+| **Capacidad y Entorno** | Capacidad ($C$) | `100` ..= `50,000` (log) | Carrying capacity ceiling. |
+| | Tasa de aparición ($\lambda$) | `0.0` ..= `1000.0` | Poisson mean for spontaneous replicator influx. |
+| | Senescencia ($\delta$) | `0.0` ..= `0.2` | Age-dependent mortality exponent ($e^{-\delta \cdot \text{age}}$). |
+| **Rasgos Iniciales** | Supervivencia $\mu_S, \sigma_S$ | $\mu \in [0, 1], \sigma \in [0, 0.5]$ | Initial survival normal distribution. |
+| | Replicación $\mu_R, \sigma_R$ | $\mu \in [0, 5], \sigma \in [0, 1.0]$ | Initial replication rate normal distribution. |
+| | Mutación $\mu_M, \sigma_M$ | $\mu \in [0, 0.2], \sigma \in [0, 0.05]$ | Initial mutation probability normal distribution. |
+| **Dinámica Evolutiva** | Sigma mutación ($\sigma$) | `0.001` ..= `0.1` | Gaussian noise added on mutation. |
+| | Límite pasos ($t_{\max}$) | `0` ..= `10,000` | Generation limit (0 = infinite). |
+| | Semilla (Seed) | Checkbox + numeric | Deterministic PRNG seed for exact reproducibility. |
+| **Convergencia** | Umbral ($\epsilon$) | `0.0001` ..= `0.01` (log) | Variance threshold for genetic equilibrium. |
+| | Ventana ($W$) | `5` ..= `200` | Number of stable generations required. |
+| | Top Perfiles | `5` ..= `30` | Number of top phenotype bins rendered in bar charts. |
+

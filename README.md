@@ -2,51 +2,47 @@
 
 ![CI](https://github.com/vikman90/selfish-gene/actions/workflows/ci.yml/badge.svg)
 
-A high-performance evolution simulator based on Richard Dawkins' **Selfish Gene** theory, implemented in Rust with real-time ASCII visualization.
+A high-performance evolution simulator based on Richard Dawkins' **Selfish Gene** theory, implemented in Rust with both a terminal CLI and a native cross-platform Graphical User Interface (GUI).
 
 ## Features
 
-- **Evolutionary simulation** with configurable traits (survival, replication, mutation)
-- **Resource pressure model**: reproduction scales with population density `1 - (N/C)`
-- **Real-time ASCII visualization**: live bar chart showing population distribution
-- **Convergence detection**: automatic stopping when trait variance stabilizes
-- **Signal handling**: graceful termination with Ctrl+C, SIGINT, and SIGTERM
-- **Flexible output**: live display or text log mode
-- **Data export**: JSON format for further analysis
-- **Fully configurable**: all parameters adjustable via CLI
+- **Evolutionary simulation engine**: Core biological models (survival, replication, mutation, age senescence).
+- **Interactive GUI Application (`selfish-gene-gui`)**:
+  - Real-time time series plots (`egui_plot`) for population $N(t)$ vs $C$, trait means $(\bar{S}, \bar{R}, \bar{M})$, and age.
+  - Interactive parameter controls: sliders for capacity, appearance rate, initial trait distributions, mutation noise, and convergence.
+  - Genotype / phenotype distribution histogram with abundance percentages.
+  - Playback controls: Play, Pause, Step (+1 generation), Reset, and simulation speed throttle (steps per frame).
+  - Ecosystem telemetry dashboard and one-click JSON export.
+- **Terminal CLI Application (`selfish-gene`)**:
+  - Real-time ASCII bar chart TUI or clean text log mode.
+  - Signal handling: graceful termination with Ctrl+C, SIGINT, and SIGTERM.
+- **Strict Reproducibility**: Exact determinism via PRNG `--seed`.
+- **Convergence Detection**: Automatic equilibrium / ESS detection via sliding variance windows.
 
-## Installation
+## Installation & Running
 
 ### Requirements
 
-- Rust 1.70+ (with Cargo)
+- Rust 1.75+ (with Cargo)
 
-### Build from source
+### Running the Graphical User Interface (GUI)
 
 ```bash
-git clone https://github.com/yourusername/selfish-gene.git
-cd selfish-gene
-cargo build --release
+# Launch interactive GUI
+cargo run --bin selfish-gene-gui --release
 ```
 
-The binary will be available at `./target/release/selfish-gene`
-
-## Usage
-
-### Quick start
+### Running the Command Line Interface (CLI)
 
 ```bash
-# Run with default parameters and live visualization
-./target/release/selfish-gene
+# Run with default parameters and live terminal TUI
+cargo run --bin selfish-gene --release
 
-# Run for 500 timesteps
-./target/release/selfish-gene --max-timesteps 500
-
-# Use text log mode instead of live display
-./target/release/selfish-gene --no-live-display
+# Run for 500 timesteps in text log mode
+cargo run --bin selfish-gene -- --max-timesteps 500 --no-live-display
 
 # Export results to JSON
-./target/release/selfish-gene -o results.json
+cargo run --bin selfish-gene -- -o results.json
 ```
 
 ### Configuration options

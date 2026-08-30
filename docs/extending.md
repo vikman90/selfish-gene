@@ -107,12 +107,38 @@ impl Config {
 
 ---
 
+### Recipe 5: Exposing New Traits and Visualizations in the GUI
+
+When adding new biological traits (e.g. altruism $A$, dispersal $D$) or environmental mechanisms:
+
+1. **Add parameters to `Config`** in [`src/config.rs`](file:///home/vikman/Projects/selfish-gene/src/config.rs).
+2. **Add interactive UI widget** in [`src/gui/panels/params.rs`](file:///home/vikman/Projects/selfish-gene/src/gui/panels/params.rs) within the corresponding collapsible header:
+   ```rust
+   ui.label("Tasa de Altruismo inicial (A):");
+   ui.add(Slider::new(&mut config.init_altruism, 0.0..=1.0).step_by(0.01))
+       .on_hover_text("Inversión de aptitud para beneficiar a receptores (Hamilton's Rule).");
+   ```
+3. **Expose time-series plot line** in [`src/gui/panels/time_series.rs`](file:///home/vikman/Projects/selfish-gene/src/gui/panels/time_series.rs):
+   ```rust
+   let altruism_points: PlotPoints = history
+       .stats
+       .iter()
+       .map(|s| [s.timestep as f64, s.altruism_mean])
+       .collect();
+   plot_ui.line(Line::new(altruism_points).name("Altruismo μ(A)"));
+   ```
+4. **Update documentation** in [`docs/parameters.md`](file:///home/vikman/Projects/selfish-gene/docs/parameters.md) and [`docs/theory.md`](file:///home/vikman/Projects/selfish-gene/docs/theory.md).
+
+---
+
 ## 2. Quality & Verification Checklist
 
 Before submitting changes, always execute the following verification steps:
 
 - [ ] **Compile & Unit Tests:** `cargo test` passes with zero errors.
 - [ ] **Formatting:** `cargo fmt --check` passes.
-- [ ] **Lints:** `cargo clippy -- -D warnings` runs cleanly.
-- [ ] **Documentation Sync:** All modified CLI arguments are reflected in [`docs/parameters.md`](file:///home/vikman/Projects/selfish-gene/docs/parameters.md).
+- [ ] **Lints:** `cargo clippy --all-targets -- -D warnings` runs cleanly.
+- [ ] **Binary Builds:** Both `cargo build --bin selfish-gene` and `cargo build --bin selfish-gene-gui` compile without warnings.
+- [ ] **Documentation Sync:** All modified parameters are reflected in [`docs/parameters.md`](file:///home/vikman/Projects/selfish-gene/docs/parameters.md).
 - [ ] **Theoretical Alignment:** Concepts adhere to the principles in [`docs/theory.md`](file:///home/vikman/Projects/selfish-gene/docs/theory.md).
+
